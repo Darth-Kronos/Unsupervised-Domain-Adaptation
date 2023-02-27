@@ -43,7 +43,7 @@ class DANNModel(torch.nn.Module):
             torch.nn.Linear(50 * 53 * 53, 100),
             torch.nn.BatchNorm1d(100),
             torch.nn.ReLU(True),
-            torch.nn.Linear(100, 3),
+            torch.nn.Linear(100, 2),
             torch.nn.LogSoftmax(dim=1),
         )
         

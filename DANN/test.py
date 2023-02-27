@@ -1,30 +1,39 @@
 import os
 import random
+
 import torch.backends.cudnn as cudnn
 import torch.utils.data
-from torchvision import transforms, datasets
-
 from model import DANNModel
-from data_loader import amazon_source, amazon_target, webcam_source, webcam_target, dslr_source, dslr_target
+from torchvision import datasets, transforms
+
+from data_loader import (
+    amazon_source,
+    amazon_target,
+    dslr_source,
+    dslr_target,
+    webcam_source,
+    webcam_target,
+)
 
 random.seed(42)
 torch.manual_seed(42)
 
-loaders_={
-	'amazon_source': amazon_source,
-	'amazon_target': amazon_target,
-	'webcam_source': webcam_source,
-	'webcam_target': webcam_target,
-    'dslr_source': dslr_source,
-    'dslr_target': dslr_target,
+loaders_ = {
+    "amazon_source": amazon_source,
+    "amazon_target": amazon_target,
+    "webcam_source": webcam_source,
+    "webcam_target": webcam_target,
+    "dslr_source": dslr_source,
+    "dslr_target": dslr_target,
 }
+
 
 def test(dataset_name):
     dataloader = loaders_[dataset_name]
     data_name = dataset_name.split("_")[0]
-    
-    model_root = 'models'
-    
+
+    model_root = "models"
+
     cuda = True
     cudnn.benchmark = True
     batch_size = 128
@@ -32,9 +41,9 @@ def test(dataset_name):
     alpha = 0
 
     """ test """
-    my_net = torch.load(os.path.join(
-        model_root, 'amazon_webcam_model_epoch_current.pth'
-    ))
+    my_net = torch.load(
+        os.path.join(model_root, "amazon_webcam_model_epoch_current.pth")
+    )
     my_net = my_net.eval()
 
     if cuda:

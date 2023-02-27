@@ -9,30 +9,38 @@ from torchvision import transforms
 
 from model import DANNModel
 from test import test
-from data_loader import amazon_source, amazon_target, webcam_source, webcam_target, dslr_source, dslr_target
+from data_loader import (
+    amazon_source,
+    amazon_target,
+    webcam_source,
+    webcam_target,
+    dslr_source,
+    dslr_target,
+)
 
 random.seed(42)
 torch.manual_seed(42)
 
-loaders_={
-	'amazon_source': amazon_source,
-	'amazon_target': amazon_target,
-	'webcam_source': webcam_source,
-	'webcam_target': webcam_target,
-    'dslr_source': dslr_source,
-    'dslr_target': dslr_target,
+loaders_ = {
+    "amazon_source": amazon_source,
+    "amazon_target": amazon_target,
+    "webcam_source": webcam_source,
+    "webcam_target": webcam_target,
+    "dslr_source": dslr_source,
+    "dslr_target": dslr_target,
 }
+
 
 def main(source_dataset, target_dataset, model_root):
     dataloader_source = loaders_[source_dataset]
     dataloader_target = loaders_[target_dataset]
-    
+
     source = source_dataset_name.split("_")[0]
     target = target_dataset_name.split("_")[0]
-    
+
     cuda = True
     torch.backends.cudnn.benchmark = True
-    
+
     lr = 1e-3
     batch_size = 128
     image_size = 224
@@ -66,7 +74,7 @@ def main(source_dataset, target_dataset, model_root):
         for i in range(len_dataloader):
 
             p = float(i + epoch * len_dataloader) / n_epoch / len_dataloader
-            alpha = 2. / (1. + np.exp(-10 * p)) - 1
+            alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
 
             # training model using source data
             data_source = next(data_source_iter)
@@ -81,7 +89,6 @@ def main(source_dataset, target_dataset, model_root):
                 s_img = s_img.cuda()
                 s_label = s_label.cuda()
                 domain_label = domain_label.cuda()
-
 
             class_output, domain_output = net(input=s_img, alpha=alpha)
             err_s_label = loss_class(class_output, s_label)
@@ -105,30 +112,49 @@ def main(source_dataset, target_dataset, model_root):
             err.backward()
             optimizer.step()
 
-            sys.stdout.write('\r epoch: %d, [iter: %d / all %d], err_s_label: %f, err_s_domain: %f, err_t_domain: %f' \
-                % (epoch, i + 1, len_dataloader, err_s_label.data.cpu().numpy(),
-                    err_s_domain.data.cpu().numpy(), err_t_domain.data.cpu().item()))
+            sys.stdout.write(
+                "\r epoch: %d, [iter: %d / all %d], err_s_label: %f, err_s_domain: %f, err_t_domain: %f"
+                % (
+                    epoch,
+                    i + 1,
+                    len_dataloader,
+                    err_s_label.data.cpu().numpy(),
+                    err_s_domain.data.cpu().numpy(),
+                    err_t_domain.data.cpu().item(),
+                )
+            )
             sys.stdout.flush()
-            torch.save(net, '{0}/{1}_{2}_model_epoch_current.pth'.format(model_root, source, target))
+            torch.save(
+                net,
+                "{0}/{1}_{2}_model_epoch_current.pth".format(
+                    model_root, source, target
+                ),
+            )
 
-
-        print('\n')
+        print("\n")
         accu_s = test(source_dataset_name)
-        print('Accuracy of the %s dataset: %f' % (source, accu_s))
+        print("Accuracy of the %s dataset: %f" % (source, accu_s))
         accu_t = test(target_dataset_name)
-        print('Accuracy of the %s dataset: %f\n' % (target, accu_t))
+        print("Accuracy of the %s dataset: %f\n" % (target, accu_t))
         if accu_t > best_accu_t:
             best_accu_s = accu_s
             best_accu_t = accu_t
-            torch.save(net, f'{model_root}/{source}_{target}_model_epoch_best.pth')
+            torch.save(net, f"{model_root}/{source}_{target}_model_epoch_best.pth")
 
-    print('============ Summary ============= \n')
-    print('Accuracy of the %s dataset: %f' % (source, best_accu_s))
-    print('Accuracy of the %s dataset: %f' % (target, best_accu_t))
-    print('Corresponding model was save in ' + model_root + f'/{source}_{target}_model_epoch_best.pth')
+    print("============ Summary ============= \n")
+    print("Accuracy of the %s dataset: %f" % (source, best_accu_s))
+    print("Accuracy of the %s dataset: %f" % (target, best_accu_t))
+    print(
+        "Corresponding model was save in "
+        + model_root
+        + f"/{source}_{target}_model_epoch_best.pth"
+    )
 
-if __name__ == '__main__':
-    source_dataset_name = 'amazon_source'
-    target_dataset_name = 'webcam_target'
-    model_root = "/home/gmvincen/class_work/ece_792/Unsupervised-Domain-Adaptation/DANN/models"
+
+if __name__ == "__main__":
+    source_dataset_name = "amazon_source"
+    target_dataset_name = "webcam_target"
+    model_root = (
+        "/home/gmvincen/class_work/ece_792/Unsupervised-Domain-Adaptation/DANN/models"
+    )
     main(source_dataset_name, target_dataset_name, model_root)

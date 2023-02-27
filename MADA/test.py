@@ -68,6 +68,7 @@ def test(dataset_name):
             t_img = t_img.cuda()
             t_label = t_label.cuda()
 
+        
         class_output, _ = my_net(input=t_img, alpha=alpha)
         pred = class_output.data.max(1, keepdim=True)[1]
         n_correct += pred.eq(t_label.data.view_as(pred)).cpu().sum()

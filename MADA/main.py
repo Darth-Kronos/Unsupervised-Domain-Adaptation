@@ -53,7 +53,7 @@ def main(source_dataset, target_dataset, model_root):
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
 
     loss_class = torch.nn.NLLLoss()
-    loss_domain = torch.nn.NLLLoss()
+    loss_domain = torch.nn.BCEWithLogitsLoss()
 
     if cuda:
         net = net.cuda()
@@ -83,7 +83,7 @@ def main(source_dataset, target_dataset, model_root):
             net.zero_grad()
             batch_size = len(s_label)
 
-            domain_label = torch.zeros(batch_size).long()
+            domain_label = torch.zeros(batch_size).float()
 
             if cuda:
                 s_img = s_img.cuda()
@@ -92,8 +92,9 @@ def main(source_dataset, target_dataset, model_root):
 
             class_output, domain_output = net(input=s_img, alpha=alpha)
             err_s_label = loss_class(class_output, s_label)
+            # print(len(domain_output), torch.squeeze(domain_output[0],1).shape, domain_label.shape)
             err_s_domain_multi = [
-                loss_domain(domain_output[class_idx], domain_label)
+                loss_domain(torch.squeeze(domain_output[class_idx],1), domain_label)
                 for class_idx in range(n_classes)
             ]
 
@@ -103,7 +104,7 @@ def main(source_dataset, target_dataset, model_root):
 
             batch_size = len(t_img)
 
-            domain_label = torch.ones(batch_size).long()
+            domain_label = torch.ones(batch_size).float()
 
             if cuda:
                 t_img = t_img.cuda()
@@ -111,7 +112,7 @@ def main(source_dataset, target_dataset, model_root):
 
             _, domain_output = net(input=t_img, alpha=alpha)
             err_t_domain_multi = [
-                loss_domain(domain_output, domain_label)
+                loss_domain(torch.squeeze(domain_output[class_idx],1), domain_label)
                 for class_idx in range(n_classes)
             ]
             
@@ -168,6 +169,6 @@ if __name__ == "__main__":
     source_dataset_name = "amazon_source"
     target_dataset_name = "webcam_target"
     model_root = (
-        "MADA/models"
+        "models"
     )
     main(source_dataset_name, target_dataset_name, model_root)

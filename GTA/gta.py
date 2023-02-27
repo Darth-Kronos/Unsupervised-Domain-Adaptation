@@ -48,33 +48,33 @@ class Generator(nn.Module):
         output = self.main(torch.cat((input, noise),1))
         return output
     
-
+# Discriminator 
 class Discriminator(nn.Module):
     def __init__(self, opt, nclasses):
         super().__init__()
         
         self.ndf = opt.ndim//2
         self.feature = nn.Sequential(
-            nn.Conv2d(3, self.ndf, 3, 1, 1),            
+            nn.Conv2d(3, 128, 5, 1, 1),            
             nn.BatchNorm2d(self.ndf),
             nn.LeakyReLU(0.2, inplace=True),
             nn.MaxPool2d(2,2),
 
-            nn.Conv2d(self.ndf, self.ndf*2, 3, 1, 1),         
+            nn.Conv2d(128, 128, 5, 1, 1),         
             nn.BatchNorm2d(self.ndf*2),
             nn.LeakyReLU(0.2, inplace=True),
             nn.MaxPool2d(2,2),
             
 
-            nn.Conv2d(self.ndf*2, self.ndf*4, 3, 1, 1),           
+            nn.Conv2d(128, 128, 5, 1, 1),           
             nn.BatchNorm2d(self.ndf*4),
             nn.LeakyReLU(0.2, inplace=True),
             nn.MaxPool2d(2,2),
             
-            nn.Conv2d(self.ndf*4, self.ndf*2, 3, 1, 1),           
-            nn.BatchNorm2d(self.ndf*2),
+            nn.Conv2d(128, 128, 5, 1, 1),           
             nn.LeakyReLU(0.2, inplace=True),
-            nn.MaxPool2d(4,4)           
+
+            nn.Unflatten(1,())         
         )        
 
         # aux-classifier fc
@@ -91,7 +91,7 @@ class Discriminator(nn.Module):
         output_c = self.aux_classifier(output.view(-1, self.ndf*2))
         return output_s, output_c
 
-
+# Pretrainied Resnet50
 class FeatureExtractor(nn.Module):
     def __init__(self, opt):
         super().__init__()
@@ -225,7 +225,7 @@ class gta:
             self.classifier.train()    
             self.discriminator.train()    
         
-            for i, (source_data, target_data) in enumerate(itertools.izip(self.source_loader, self.target_loader)):
+            for i, (source_data, target_data) in enumerate(zip(self.source_loader, self.target_loader)):
                           
                 source_images, source_labels = source_data
                 target_images, __ = target_data       
@@ -260,7 +260,7 @@ class gta:
                 # Training D network
                 
                 self.discriminator.zero_grad()
-                source_embedds = self.featureExtractor(source_images)
+                source_embedds = self.featureExtractor(source_images) # 2048 size embedds
                 source_embedds_label = torch.cat((source_labels_onehot, source_embedds), 1)
                 source_gen = self.generator(source_embedds_label)
 

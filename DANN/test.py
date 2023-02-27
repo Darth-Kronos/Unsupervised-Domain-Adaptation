@@ -5,6 +5,7 @@ import torch.backends.cudnn as cudnn
 import torch.utils.data
 from model import DANNModel
 from torchvision import datasets, transforms
+from torchmetrics.classification import F1Score
 
 from data_loader import (
     amazon_source,
@@ -28,26 +29,28 @@ loaders_ = {
 }
 
 
-def test(dataset_name):
+def test(args, dataset_name):
     dataloader = loaders_[dataset_name]
     data_name = dataset_name.split("_")[0]
 
-    model_root = "models"
+    source = args.source_dataset.split("_")[0]
+    target = args.target_dataset.split("_")[0]
 
-    cuda = True
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     cudnn.benchmark = True
     batch_size = 128
-    image_size = 28
+    image_size = 224
     alpha = 0
 
     """ test """
     my_net = torch.load(
-        os.path.join(model_root, "amazon_webcam_model_epoch_current.pth")
+        os.path.join(args.model_path, f"{source}_{target}_model_epoch_current.pth")
     )
     my_net = my_net.eval()
+    f1 = F1Score(task="multiclass", num_classes=31)
 
-    if cuda:
-        my_net = my_net.cuda()
+    if device == "cuda":
+        my_net = my_net.to(device)
 
     len_dataloader = len(dataloader)
     data_target_iter = iter(dataloader)
@@ -55,7 +58,7 @@ def test(dataset_name):
     i = 0
     n_total = 0
     n_correct = 0
-
+    f1_running = 0
     while i < len_dataloader:
 
         # test model using target data
@@ -64,17 +67,21 @@ def test(dataset_name):
 
         batch_size = len(t_label)
 
-        if cuda:
-            t_img = t_img.cuda()
-            t_label = t_label.cuda()
+        if device == "cuda":
+            t_img = t_img.to(device)
+            t_label = t_label.to(device)
 
         class_output, _ = my_net(input=t_img, alpha=alpha)
         pred = class_output.data.max(1, keepdim=True)[1]
         n_correct += pred.eq(t_label.data.view_as(pred)).cpu().sum()
         n_total += batch_size
+        
+        f1_running += f1(pred, t_label.data.view_as(pred))
 
         i += 1
 
     accu = n_correct.data.numpy() * 1.0 / n_total
+    f1_running /= n_total
 
-    return accu
+
+    return accu, f1_running

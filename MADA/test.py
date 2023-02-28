@@ -32,7 +32,7 @@ def test(dataset_name):
     dataloader = loaders_[dataset_name]
     data_name = dataset_name.split("_")[0]
 
-    model_root = "MADA/models"
+    model_root = "models"
 
     cuda = True
     cudnn.benchmark = True

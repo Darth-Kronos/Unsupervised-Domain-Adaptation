@@ -29,7 +29,13 @@ loaders_ = {
     "dslr_source": dslr_source,
     "dslr_target": dslr_target,
 }
-
+def lr_schedule_step(optimizers, p):
+    for param_group in optimizers.param_groups:
+        # Update Learning rate
+        param_group["lr"] = 1 * 0.01 / (
+                    1 + 10 * p) ** 0.75
+        # Update weight_decay
+        param_group["weight_decay"] = 2.5e-5 * 2
 
 def main(source_dataset, target_dataset, model_root):
     dataloader_source = loaders_[source_dataset]
@@ -41,16 +47,22 @@ def main(source_dataset, target_dataset, model_root):
     cuda = True
     torch.backends.cudnn.benchmark = True
 
-    lr = 1e-3
-    batch_size = 128
+    lr = 0.01
+    batch_size = 256
     image_size = 224
-    n_epoch = 100
+    n_epoch = 20
     n_classes = 31
     # load model
     net = MADA(n_classes)
 
     # setup optimizer
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    # optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    optimizer = torch.optim.SGD(
+            net.parameters(),
+            lr=0.01,
+            momentum=0.9,
+            weight_decay=2.5e-5,
+            nesterov=True)
 
     loss_class = torch.nn.NLLLoss()
     loss_domain = torch.nn.BCEWithLogitsLoss()
@@ -75,6 +87,8 @@ def main(source_dataset, target_dataset, model_root):
 
             p = float(i + epoch * len_dataloader) / n_epoch / len_dataloader
             alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
+            
+            lr_schedule_step(optimizer, p)
 
             # training model using source data
             data_source = next(data_source_iter)
@@ -169,6 +183,6 @@ if __name__ == "__main__":
     source_dataset_name = "amazon_source"
     target_dataset_name = "webcam_target"
     model_root = (
-        "MADA/models"
+        "models"
     )
     main(source_dataset_name, target_dataset_name, model_root)

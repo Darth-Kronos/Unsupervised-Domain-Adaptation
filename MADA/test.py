@@ -32,7 +32,7 @@ def test(dataset_name):
     dataloader = loaders_[dataset_name]
     data_name = dataset_name.split("_")[0]
 
-    model_root = "models"
+    model_root = "MADA/models"
 
     cuda = True
     cudnn.benchmark = True
@@ -63,7 +63,12 @@ def test(dataset_name):
         t_img, t_label = data_target
 
         batch_size = len(t_label)
-
+        
+        i += 1
+        
+        if batch_size == 1:
+            continue
+        
         if cuda:
             t_img = t_img.cuda()
             t_label = t_label.cuda()
@@ -74,7 +79,7 @@ def test(dataset_name):
         n_correct += pred.eq(t_label.data.view_as(pred)).cpu().sum()
         n_total += batch_size
 
-        i += 1
+        
 
     accu = n_correct.data.numpy() * 1.0 / n_total
 

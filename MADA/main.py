@@ -38,7 +38,7 @@ def main(source_dataset, target_dataset, model_root):
     source = source_dataset_name.split("_")[0]
     target = target_dataset_name.split("_")[0]
 
-    cuda = False
+    cuda = True
     torch.backends.cudnn.benchmark = True
 
     lr = 1e-3
@@ -169,6 +169,6 @@ if __name__ == "__main__":
     source_dataset_name = "amazon_source"
     target_dataset_name = "webcam_target"
     model_root = (
-        "models"
+        "MADA/models"
     )
     main(source_dataset_name, target_dataset_name, model_root)

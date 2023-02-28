@@ -113,7 +113,7 @@ class DSLR(torch.utils.data.Dataset):
 
 
 # set up the 6 different loaders
-root = "../data"
+root = "data"
 transform = transforms.Compose(
     [
         transforms.Resize(224),

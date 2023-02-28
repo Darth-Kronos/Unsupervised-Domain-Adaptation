@@ -6,7 +6,7 @@ export model_path="/home/gmvincen/class_work/ece_792/Unsupervised-Domain-Adaptat
 
 for j in ${targets[@]}; do
     echo "dslr_source and" $j
-    CUDA_VISIBLE_DEVICE=8 python main.py \
+    CUDA_VISIBLE_DEVICES=8 python main.py \
         -sd "dslr_source" \
         -td $j \
         -models $model_path; \

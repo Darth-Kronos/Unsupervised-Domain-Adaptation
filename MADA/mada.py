@@ -3,6 +3,9 @@ import torch.nn.functional as F
 from torch.autograd import Function
 import torch
 
+from torchvision.models import resnet50, alexnet
+
+
 class ReverseLayerF(torch.autograd.Function):
     @staticmethod
     def forward(self, x, alpha):
@@ -20,10 +23,10 @@ class DomainClassifier(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.net = torch.nn.Sequential(
-            torch.nn.Linear(50 * 53 * 53, 100),
-            torch.nn.BatchNorm1d(100),
-            torch.nn.ReLU(True),
-            torch.nn.Linear(100, 1),
+            #torch.nn.Linear(2048, 100),
+            #torch.nn.BatchNorm1d(100),
+            #torch.nn.ReLU(True),
+            torch.nn.Linear(2048, 1),
             # torch.nn.LogSoftmax(dim=1),
         )
 
@@ -36,7 +39,7 @@ class MADA(torch.nn.Module):
         
         self.n_classes = n_classes
 
-        self.feature = torch.nn.Sequential(
+        """self.feature = torch.nn.Sequential(
             torch.nn.Conv2d(3, 64, kernel_size=5),
             torch.nn.BatchNorm2d(64),
             torch.nn.MaxPool2d(2),
@@ -46,22 +49,26 @@ class MADA(torch.nn.Module):
             torch.nn.Dropout2d(),
             torch.nn.MaxPool2d(2),
             torch.nn.ReLU(True),
-        )
+        )"""
+        
+        self.feature = resnet50(pretrained=True)
+        self.feature = torch.nn.Sequential(*(list(self.feature.children())[:-1]))
+        
         
         self.class_classifier = torch.nn.Sequential(
-            torch.nn.Linear(50 * 53 * 53, 100),
-            torch.nn.BatchNorm1d(100),
-            torch.nn.ReLU(True),
-            torch.nn.Dropout1d(),
-            torch.nn.Linear(100, 100),
-            torch.nn.BatchNorm1d(100),
-            torch.nn.ReLU(True),
-            torch.nn.Linear(100, 31),
+            #torch.nn.Linear(2048, 100),
+            #torch.nn.BatchNorm1d(100),
+            #torch.nn.ReLU(True),
+            #torch.nn.Dropout1d(),
+            #torch.nn.Linear(100, 100),
+            #torch.nn.BatchNorm1d(100),
+            #torch.nn.ReLU(True),
+            torch.nn.Linear(2048, 31),
             torch.nn.LogSoftmax(dim=1),
         )
         
         self.domain_classifier_multi = [
-            DomainClassifier() for _ in range(self.n_classes)
+            DomainClassifier().cuda() for _ in range(self.n_classes)
         ]
         
         

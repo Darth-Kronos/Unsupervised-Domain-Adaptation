@@ -5,7 +5,7 @@ export data_dir="/home/gmvincen/class_work/ece_792/Unsupervised-Domain-Adaptatio
 export model_path="/home/gmvincen/class_work/ece_792/Unsupervised-Domain-Adaptation/DANN/models"
 for j in ${targets[@]}; do
     echo "amazon_source and" $j
-    CUDA_VISIBLE_DEVICE=7 python main.py \
+    CUDA_VISIBLE_DEVICES=7 python main.py \
         -sd "amazon_source" \
         -td $j \
         -models $model_path; \

@@ -10,3 +10,8 @@ UDA has been studied extensively in recent years, with a variety of methods prop
 To train DANN with a source of Amazon for target Webcam a sample command line call is provided
 
 ```python main.py --source_dataset "amazon_source" --target_dataset "webcam_target" --model_path "models" --data_dir "data"```
+
+### Multi-Adversarial Domain Adaptation 
+To train MADA, change the source and target varables in MADA/main.py and run:
+
+```python main.py ```

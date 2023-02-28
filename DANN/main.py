@@ -40,13 +40,13 @@ def main(args):
     source = args.source_dataset.split("_")[0]
     target = args.target_dataset.split("_")[0]
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #torch.backends.cudnn.benchmark = True
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    torch.backends.cudnn.benchmark = True
 
     lr = 1e-3
     batch_size = 128
     image_size = 224
-    n_epoch = 100
+    n_epoch = 25
 
     # load model
     net = DANNModel()

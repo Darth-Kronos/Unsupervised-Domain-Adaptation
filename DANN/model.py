@@ -31,22 +31,22 @@ class DANNModel(torch.nn.Module):
         self.feature = torch.nn.Sequential(*(list(self.feature.children())[:-1]))
         
         self.class_classifier = torch.nn.Sequential(
-            #torch.nn.Linear(2048, 100),
-            #torch.nn.BatchNorm1d(100),
-            #torch.nn.ReLU(True),
-            #torch.nn.Dropout1d(),
-            #torch.nn.Linear(100, 100),
-            #torch.nn.BatchNorm1d(100),
-            #orch.nn.ReLU(True),
-            torch.nn.Linear(2048, 31),
+            torch.nn.Linear(2048, 1024),
+            torch.nn.BatchNorm1d(1024),
+            torch.nn.ReLU(True),
+            torch.nn.Dropout1d(),
+            torch.nn.Linear(1042, 512),
+            torch.nn.BatchNorm1d(512),
+            torch.nn.ReLU(True),
+            torch.nn.Linear(512, 31),
             torch.nn.LogSoftmax(dim=1),
         )
         
         self.domain_classifier = torch.nn.Sequential(
-            torch.nn.Linear(2048, 2),
-            #torch.nn.BatchNorm1d(100),
-            #torch.nn.ReLU(True),
-            #torch.nn.Linear(100, 2),
+            torch.nn.Linear(2048, 512),
+            torch.nn.BatchNorm1d(512),
+            torch.nn.ReLU(True),
+            torch.nn.Linear(512, 2),
             torch.nn.LogSoftmax(dim=1),
         )
         

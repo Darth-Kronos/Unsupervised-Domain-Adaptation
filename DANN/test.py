@@ -36,7 +36,7 @@ def test(args, dataset_name):
     source = args.source_dataset.split("_")[0]
     target = args.target_dataset.split("_")[0]
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     cudnn.benchmark = True
     batch_size = 128
     image_size = 224
@@ -76,7 +76,7 @@ def test(args, dataset_name):
         n_correct += pred.eq(t_label.data.view_as(pred)).cpu().sum()
         n_total += batch_size
         
-        f1_running += f1(pred, t_label.data.view_as(pred))
+        f1_running += f1(pred.cpu(), t_label.data.view_as(pred).cpu())
 
         i += 1
 

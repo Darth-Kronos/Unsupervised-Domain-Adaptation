@@ -8,4 +8,5 @@ UDA has been studied extensively in recent years, with a variety of methods prop
 
 ### Domain Adaptation Neural Network
 To train DANN with a source of Amazon for target Webcam a sample command line call is provided
+
 ```python main.py --source_dataset "amazon_source" --target_dataset "webcam_target" --model_path "models" --data_dir "data"```

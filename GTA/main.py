@@ -25,19 +25,19 @@ from data_loader import (
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=32, help='input batch size')
 # parser.add_argument('--imageSize', type=int, default=32, help='the height / width of the input image to network')
-parser.add_argument('--nz', type=int, default=256, help='size of the latent z vector')
-parser.add_argument('--ngf', type=int, default=32//2, help='Number of filters to use in the generator network')
-parser.add_argument('--ndim', type=int, default=32, help='Number of filters to use in the discriminator network')
+parser.add_argument('--nz', type=int, default=128, help='size of the latent z vector')
+parser.add_argument('--ngf', type=int, default=64, help='Number of filters to use in the generator network')
+parser.add_argument('--ndim', type=int, default=2048, help='Number of filters to use in the discriminator network')
 parser.add_argument('--epochs', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--lr', type=float, default=0.0005, help='learning rate, default=0.0002')
-parser.add_argument('--beta1', type=float, default=0.8, help='beta1 for adam. default=0.5')
+parser.add_argument('--beta1', type=float, default=0.7, help='beta1 for adam. default=0.5')
 parser.add_argument('--gpu', type=int, default=-1, help='GPU to use, -1 for CPU training')
 parser.add_argument('--outf', default='results', help='folder to output images and model checkpoints')
 # parser.add_argument('--method', default='GTA', help='Method to train| GTA, sourceonly')
 # parser.add_argument('--manualSeed', type=int, help='manual seed')
 parser.add_argument('--adv_weight', type=float, default = 0.1, help='weight for adv loss')
-parser.add_argument('--lrd', type=float, default=0.0001, help='learning rate decay, default=0.0002')
-parser.add_argument('--alpha', type=float, default = 0.3, help='multiplicative factor for target adv. loss')
+parser.add_argument('--lrd', type=float, default=0.0004, help='learning rate decay, default=0.0002')
+parser.add_argument('--alpha', type=float, default = 0.01, help='multiplicative factor for target adv. loss')
 
 
 opt = parser.parse_args()
@@ -78,12 +78,16 @@ def main(source_dataset, target_dataset):
     dataloader_source = loaders_[source_dataset]
     dataloader_target = loaders_[target_dataset]
 
+    train_size = int(0.8 * len(dataloader_source))
+    test_size = len(dataloader_source) - train_size
+    dataloader_source_train, dataloader_source_val = torch.utils.data.random_split(dataloader_source, [train_size, test_size])
+
     source = source_dataset.split("_")[0]
     target = target_dataset.split("_")[0]
 
     nclasses = len(classes)
 
-    model = gta(opt, nclasses, mean, std, dataloader_source, dataloader_target)
+    model = gta(opt, nclasses, mean, std, dataloader_source_train.dataset, dataloader_target, dataloader_source_val.dataset)
     model.train()
 
 if __name__ == '__main__':

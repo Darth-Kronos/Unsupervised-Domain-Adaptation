@@ -5,6 +5,7 @@ import torch.optim as optim
 import itertools
 import numpy as np
 import utils
+from torchvision.models import resnet50
 
 # Generator network
 class Generator(nn.Module):
@@ -30,6 +31,10 @@ class Generator(nn.Module):
             nn.BatchNorm2d(self.ngf*2),
             nn.ReLU(True),
 
+            nn.ConvTranspose2d(self.ngf*2, self.ngf*2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(self.ngf*2),
+            nn.ReLU(True),
+
             nn.ConvTranspose2d(self.ngf*2, self.ngf, 4, 2, 1, bias=False),
             nn.BatchNorm2d(self.ngf),
             nn.ReLU(True),
@@ -45,7 +50,7 @@ class Generator(nn.Module):
         if self.gpu>=0:
             noise = noise.cuda()
         noise = Variable(noise)
-        output = self.main(torch.cat((input, noise),1))
+        output = self.block(torch.cat((input, noise),1))
         return output
     
 # Discriminator 
@@ -53,42 +58,47 @@ class Discriminator(nn.Module):
     def __init__(self, opt, nclasses):
         super().__init__()
         
-        self.ndf = opt.ndim//2
+        # self.ndf = opt.ndim//2
         self.feature = nn.Sequential(
             nn.Conv2d(3, 128, 5, 1, 1),            
-            nn.BatchNorm2d(self.ndf),
+            nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.MaxPool2d(2,2),
 
             nn.Conv2d(128, 128, 5, 1, 1),         
-            nn.BatchNorm2d(self.ndf*2),
+            nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.MaxPool2d(2,2),
             
 
             nn.Conv2d(128, 128, 5, 1, 1),           
-            nn.BatchNorm2d(self.ndf*4),
+            nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.MaxPool2d(2,2),
             
             nn.Conv2d(128, 128, 5, 1, 1),           
             nn.LeakyReLU(0.2, inplace=True),
-
-            nn.Unflatten(1,())         
+            nn.MaxPool2d(4,4)         
         )        
-
+        self.extra_layers = nn.Sequential(
+            nn.Linear(128, 500),
+            nn.Linear(500, 500)
+        )
         # aux-classifier fc
-        self.aux_classifier = nn.Linear(self.ndf*2, nclasses)
+        self.aux_classifier = nn.Linear(500, nclasses)
         # discriminator fc
         self.source_classifier = nn.Sequential(
-        						nn.Linear(self.ndf*2, 1), 
-        						nn.Sigmoid())              
+        						nn.Linear(500, 1), 
+        						nn.Sigmoid())
+
+
 
     def forward(self, input):       
-        output = self.feature(input)
-        output_s = self.source_classifier(output.view(-1, self.ndf*2))
+        output_1 = self.feature(input)
+        output = self.extra_layers(output_1.view(-1, 128))
+        output_s = self.source_classifier(output)
         output_s = output_s.view(-1)
-        output_c = self.aux_classifier(output.view(-1, self.ndf*2))
+        output_c = self.aux_classifier(output)
         return output_s, output_c
 
 # Pretrainied Resnet50
@@ -97,42 +107,47 @@ class FeatureExtractor(nn.Module):
         super().__init__()
         
         self.ndf = opt.ndim//2
-        self.feature = nn.Sequential(
-            nn.Conv2d(3, self.ndf, 5, 1, 0),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),
+        # self.feature = nn.Sequential(
+        #     nn.Conv2d(3, self.ndf, 5, 1, 0),
+        #     nn.ReLU(inplace=True),
+        #     nn.MaxPool2d(2, 2),
             
-            nn.Conv2d(self.ndf, self.ndf, 5, 1, 0),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),
+        #     nn.Conv2d(self.ndf, self.ndf, 5, 1, 0),
+        #     nn.ReLU(inplace=True),
+        #     nn.MaxPool2d(2, 2),
                     
-            nn.Conv2d(self.ndf, self.ndf*2, 5, 1,0),
-            nn.ReLU(inplace=True)
-        )
+        #     nn.Conv2d(self.ndf, self.ndf*2, 5, 1,0),
+        #     nn.ReLU(inplace=True)
+        # )
+        self.feature = resnet50(weights='DEFAULT')
+        self.feature = torch.nn.Sequential(*(list(self.feature.children())[:-1]))
 
     def forward(self, input):   
         output = self.feature(input)
-        return output.view(-1, 2*self.ndf)
+        return output.view(-1, 2048)
 
 class Classifier(nn.Module):
     def __init__(self, opt, nclasses):
         super().__init__()
-        self.ndf = opt.ndim//2
-        self.main = nn.Sequential(          
-            nn.Linear(2*self.ndf, 2*self.ndf),
-            nn.ReLU(inplace=True),
-            nn.Linear(2*self.ndf, nclasses),                         
+        # self.ndf = opt.ndim//2
+        # self.main = nn.Sequential(          
+        #     nn.Linear(2*self.ndf, 2*self.ndf),
+        #     nn.ReLU(inplace=True),
+        #     nn.Linear(2*self.ndf, nclasses),                         
+        # )
+        self.main = nn.Sequential(
+            nn.Linear(2048, nclasses)
         )
-
     def forward(self, input):       
         output = self.main(input)
         return output
 
 class gta:
-    def __init__(self, opt, nclasses, mean, std, source_loader, target_loader):
+    def __init__(self, opt, nclasses, mean, std, source_loader, target_loader, source_valloader):
 
         self.source_loader = source_loader
         self.target_loader = target_loader
+        self.source_valloader = source_valloader
         self.opt = opt
         self.mean = mean
         self.std = std
@@ -262,11 +277,11 @@ class gta:
                 self.discriminator.zero_grad()
                 source_embedds = self.featureExtractor(source_images) # 2048 size embedds
                 source_embedds_label = torch.cat((source_labels_onehot, source_embedds), 1)
-                source_gen = self.generator(source_embedds_label)
+                source_gen = self.generator(source_embedds_label).detach()
 
                 target_embedds = self.featureExtractor(target_images)
                 target_embedds_label = torch.cat((target_labels_onehot, target_embedds),1)
-                target_gen = self.generator(target_embedds_label)
+                target_gen = self.generator(target_embedds_label).detach()
 
                 source_real_D_s, source_real_D_c = self.discriminator(source_inputs_unnorm)   
                 errD_src_real_s = self.source_loss(source_real_D_s, real_label) 
@@ -299,24 +314,26 @@ class gta:
                 self.classifier.zero_grad()
                 outC = self.classifier(source_embedds)   
                 errC = self.aux_loss(outC, source_labels)
+                # errC = Variable(errC, requires_grad=True)
                 errC.backward(retain_graph=True)    
                 self.optimizerC.step()
 
                 
                 # Training F network
+                with torch.autograd.set_detect_anomaly(True):
+                    self.featureExtractor.zero_grad()
+                    outC = self.classifier(source_embedds)
+                    errF_fromC = self.aux_loss(outC, source_labels)        
 
-                self.featureExtractor.zero_grad()
-                errF_fromC = self.aux_loss(outC, source_labels)        
+                    source_fake_D_s, source_fake_D_c = self.discriminator(source_gen)
+                    errF_src_fromD = self.aux_loss(source_fake_D_c, source_labels)*(self.opt.adv_weight)
 
-                source_fake_D_s, source_fake_D_c = self.discriminator(source_gen)
-                errF_src_fromD = self.aux_loss(source_fake_D_c, source_labels)*(self.opt.adv_weight)
-
-                target_fake_D_s, target_fake_D_c = self.discriminator(target_gen)
-                errF_tgt_fromD = self.source_loss(target_fake_D_s, real_label)*(self.opt.adv_weight*self.opt.alpha)
-                
-                errF = errF_fromC + errF_src_fromD + errF_tgt_fromD
-                errF.backward()
-                self.optimizerF.step()        
+                    target_fake_D_s, target_fake_D_c = self.discriminator(target_gen)
+                    errF_tgt_fromD = self.source_loss(target_fake_D_s, real_label)*(self.opt.adv_weight*self.opt.alpha)
+                    
+                    errF = errF_fromC + 0.01*errF_src_fromD + 0.01*errF_tgt_fromD
+                    errF.backward(retain_graph=True)
+                    self.optimizerF.step()        
                 
                 curr_iter += 1
                 

@@ -113,7 +113,7 @@ class DSLR(torch.utils.data.Dataset):
 
 
 # set up the 6 different loaders
-root = "data"
+root = "../data"
 transform = transforms.Compose(
     [
         transforms.Resize(64),
@@ -127,6 +127,7 @@ amazon_source = torch.utils.data.DataLoader(
     shuffle=True,
     num_workers=8,
     pin_memory=True,
+    drop_last = True
 )
 amazon_target = torch.utils.data.DataLoader(
     Amazon(path=os.path.join(root, "amazon"), transforms=transform),
@@ -134,6 +135,7 @@ amazon_target = torch.utils.data.DataLoader(
     shuffle=False,
     num_workers=8,
     pin_memory=True,
+    drop_last = True
 )
 
 webcam_source = torch.utils.data.DataLoader(
@@ -142,6 +144,7 @@ webcam_source = torch.utils.data.DataLoader(
     shuffle=True,
     num_workers=8,
     pin_memory=True,
+    drop_last = True
 )
 webcam_target = torch.utils.data.DataLoader(
     Webcam(path=os.path.join(root, "webcam"), transforms=transform),
@@ -149,6 +152,7 @@ webcam_target = torch.utils.data.DataLoader(
     shuffle=False,
     num_workers=8,
     pin_memory=True,
+    drop_last = True
 )
 
 dslr_source = torch.utils.data.DataLoader(
@@ -157,6 +161,7 @@ dslr_source = torch.utils.data.DataLoader(
     shuffle=True,
     num_workers=8,
     pin_memory=True,
+    drop_last = True
 )
 dslr_target = torch.utils.data.DataLoader(
     DSLR(path=os.path.join(root, "dslr"), transforms=transform),
@@ -164,4 +169,5 @@ dslr_target = torch.utils.data.DataLoader(
     shuffle=False,
     num_workers=8,
     pin_memory=True,
+    drop_last = True
 )

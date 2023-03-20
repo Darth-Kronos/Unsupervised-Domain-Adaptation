@@ -35,9 +35,9 @@ parser.add_argument('--gpu', type=int, default=-1, help='GPU to use, -1 for CPU 
 parser.add_argument('--outf', default='results', help='folder to output images and model checkpoints')
 # parser.add_argument('--method', default='GTA', help='Method to train| GTA, sourceonly')
 # parser.add_argument('--manualSeed', type=int, help='manual seed')
-parser.add_argument('--adv_weight', type=float, default = 0.1, help='weight for adv loss')
+parser.add_argument('--adv_weight', type=float, default = 0.01, help='weight for adv loss')
 parser.add_argument('--lrd', type=float, default=0.0004, help='learning rate decay, default=0.0002')
-parser.add_argument('--alpha', type=float, default = 0.01, help='multiplicative factor for target adv. loss')
+parser.add_argument('--alpha', type=float, default = 1, help='multiplicative factor for target adv. loss')
 
 
 opt = parser.parse_args()

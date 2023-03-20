@@ -206,7 +206,23 @@ class gta:
             correct += ((predicted == labels.cuda()).sum())
             
         val_acc = 100*float(correct)/total
-        print(f'Epoch: {epoch}, Val Accuracy: {val_acc}')
+
+        total = 0
+        correct = 0
+    
+        # Testing the model
+        for i, target_data in enumerate(self.target_loader):
+            inputs, labels = target_data         
+            inputv, labelv = Variable(inputs.cuda(), volatile=True), Variable(labels.cuda()) 
+
+            outC = self.classifier(self.featureExtractor(inputv))
+            _, predicted = torch.max(outC.data, 1)        
+            total += labels.size(0)
+            correct += ((predicted == labels.cuda()).sum())
+            
+        acc_tar = 100*float(correct)/total
+
+        print(f'Epoch: {epoch}, Val Accuracy: {val_acc}, Target Accuracy: {acc_tar}')
     
         # Saving checkpoints
         torch.save(self.featureExtractor.state_dict(), '%s/models/featureExtractor.pth' %(self.opt.outf))
@@ -346,7 +362,7 @@ class gta:
                     self.optimizerC = utils.exp_lr_scheduler(self.optimizerC, epoch, self.opt.lr, self.opt.lrd, curr_iter)                  
             
             # Validate every epoch
-            self.validate(epoch+1)
+            self.validate(epoch)
 
     
     

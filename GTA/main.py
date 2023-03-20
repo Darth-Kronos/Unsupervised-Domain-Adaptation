@@ -54,6 +54,8 @@ try:
 except OSError:
     pass
 
+if torch.cuda.is_available():
+    opt.gpu = 1
 
 random.seed(42)
 torch.manual_seed(42)

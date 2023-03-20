@@ -277,13 +277,14 @@ class gta:
                 self.discriminator.zero_grad()
                 source_embedds = self.featureExtractor(source_images) # 2048 size embedds
                 source_embedds_label = torch.cat((source_labels_onehot, source_embedds), 1)
+
                 source_gen = self.generator(source_embedds_label).detach()
 
                 target_embedds = self.featureExtractor(target_images)
                 target_embedds_label = torch.cat((target_labels_onehot, target_embedds),1)
                 target_gen = self.generator(target_embedds_label).detach()
 
-                source_real_D_s, source_real_D_c = self.discriminator(source_inputs_unnorm)   
+                source_real_D_s, source_real_D_c = self.discriminator(source_images)   
                 errD_src_real_s = self.source_loss(source_real_D_s, real_label) 
                 errD_src_real_c = self.aux_loss(source_real_D_c, source_labels) 
 
@@ -320,20 +321,20 @@ class gta:
 
                 
                 # Training F network
-                with torch.autograd.set_detect_anomaly(True):
-                    self.featureExtractor.zero_grad()
-                    outC = self.classifier(source_embedds)
-                    errF_fromC = self.aux_loss(outC, source_labels)        
+               
+                self.featureExtractor.zero_grad()
+                outC = self.classifier(source_embedds)
+                errF_fromC = self.aux_loss(outC, source_labels)        
 
-                    source_fake_D_s, source_fake_D_c = self.discriminator(source_gen)
-                    errF_src_fromD = self.aux_loss(source_fake_D_c, source_labels)*(self.opt.adv_weight)
+                source_fake_D_s, source_fake_D_c = self.discriminator(source_gen)
+                errF_src_fromD = self.aux_loss(source_fake_D_c, source_labels)*(self.opt.adv_weight)
 
-                    target_fake_D_s, target_fake_D_c = self.discriminator(target_gen)
-                    errF_tgt_fromD = self.source_loss(target_fake_D_s, real_label)*(self.opt.adv_weight*self.opt.alpha)
-                    
-                    errF = errF_fromC + 0.01*errF_src_fromD + 0.01*errF_tgt_fromD
-                    errF.backward(retain_graph=True)
-                    self.optimizerF.step()        
+                target_fake_D_s, target_fake_D_c = self.discriminator(target_gen)
+                errF_tgt_fromD = self.source_loss(target_fake_D_s, real_label)*(self.opt.adv_weight*self.opt.alpha)
+                
+                errF = errF_fromC + errF_src_fromD + errF_tgt_fromD
+                errF.backward(retain_graph=True)
+                self.optimizerF.step()        
                 
                 curr_iter += 1
                 

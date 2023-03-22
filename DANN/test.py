@@ -6,6 +6,7 @@ import torch.utils.data
 from model import DANNModel
 from torchvision import datasets, transforms
 from torchmetrics.classification import F1Score
+from metrics import update_metrics, log_tensorboard
 
 from data_loader import (
     amazon_source,
@@ -29,7 +30,7 @@ loaders_ = {
 }
 
 
-def test(args, dataset_name):
+def test(args, dataset_name, metrics, writer, tag, epoch):
     dataloader = loaders_[dataset_name]
     data_name = dataset_name.split("_")[0]
 
@@ -49,8 +50,11 @@ def test(args, dataset_name):
     my_net = my_net.eval()
     f1 = F1Score(task="multiclass", num_classes=31)
 
+    loss_class = torch.nn.NLLLoss()
+    
     if device == "cuda":
         my_net = my_net.to(device)
+        loss_class = loss_class.to(device)
 
     len_dataloader = len(dataloader)
     data_target_iter = iter(dataloader)
@@ -72,16 +76,24 @@ def test(args, dataset_name):
             t_label = t_label.to(device)
 
         class_output, _ = my_net(input=t_img, alpha=alpha)
-        pred = class_output.data.max(1, keepdim=True)[1]
+        err_t_label = loss_class(class_output, t_label)
+
+        pred = torch.argmax(class_output, dim=1)       
         n_correct += pred.eq(t_label.data.view_as(pred)).cpu().sum()
         n_total += batch_size
+        
+        # update val metrics
+        metrics = update_metrics(metrics, pred, t_label) 
+        writer.add_scalar(f"Loss/class/{tag}/val", err_t_label, epoch)
         
         f1_running += f1(pred.cpu(), t_label.data.view_as(pred).cpu())
 
         i += 1
 
+    metrics = log_tensorboard(writer, f"class/{tag}/val", metrics, epoch, source, target)
+    
     accu = n_correct.data.numpy() * 1.0 / n_total
     f1_running /= n_total
 
 
-    return accu, f1_running
+    return accu, f1_running, metrics

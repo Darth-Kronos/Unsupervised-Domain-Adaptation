@@ -142,6 +142,7 @@ def main(args):
             writer.add_scalar(f"Loss/domain/target/train", err_t_domain, epoch)
             writer.add_scalar(f"Loss/class/target/train", err_t_label, epoch)
             writer.add_scalar(f"Loss/class/source/train", err_s_label, epoch)
+            writer.add_scalar(f"Loss/overall", err, epoch)
             writer.add_scalar("Learning_rate", optimizer.param_groups[0]["lr"], epoch)
 
             scheduler.step()

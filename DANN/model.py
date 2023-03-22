@@ -1,5 +1,5 @@
 import torch
-from torchvision.models import resnet50, alexnet
+from torchvision.models import resnet50, alexnet, ResNet50_Weights
 
 class ReverseLayerF(torch.autograd.Function):
     def forward(self, x, alpha):
@@ -27,7 +27,7 @@ class DANNModel(torch.nn.Module):
             torch.nn.MaxPool2d(2),
             torch.nn.ReLU(True),
         )"""
-        self.feature = resnet50(pretrained=True)
+        self.feature = resnet50(weights=ResNet50_Weights.DEFAULT)
         self.feature = torch.nn.Sequential(*(list(self.feature.children())[:-1]))
         
         self.class_classifier = torch.nn.Sequential(

@@ -51,7 +51,7 @@ def test(args, dataset_name, metrics, writer, tag, epoch):
     f1 = F1Score(task="multiclass", num_classes=31)
 
     loss_class = torch.nn.NLLLoss()
-    
+
     if device == "cuda":
         my_net = my_net.to(device)
         loss_class = loss_class.to(device)
@@ -78,22 +78,23 @@ def test(args, dataset_name, metrics, writer, tag, epoch):
         class_output, _ = my_net(input=t_img, alpha=alpha)
         err_t_label = loss_class(class_output, t_label)
 
-        pred = torch.argmax(class_output, dim=1)       
+        pred = torch.argmax(class_output, dim=1)
         n_correct += pred.eq(t_label.data.view_as(pred)).cpu().sum()
         n_total += batch_size
-        
+
         # update val metrics
-        metrics = update_metrics(metrics, pred, t_label) 
+        metrics = update_metrics(metrics, pred, t_label)
         writer.add_scalar(f"Loss/class/{tag}/val", err_t_label, epoch)
-        
+
         f1_running += f1(pred.cpu(), t_label.data.view_as(pred).cpu())
 
         i += 1
 
-    metrics = log_tensorboard(writer, f"class/{tag}/val", metrics, epoch, source, target)
-    
+    metrics = log_tensorboard(
+        writer, f"class/{tag}/val", metrics, epoch, source, target
+    )
+
     accu = n_correct.data.numpy() * 1.0 / n_total
     f1_running /= n_total
-
 
     return accu, f1_running, metrics

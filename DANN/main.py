@@ -40,13 +40,13 @@ def main(args):
     dataloader_source = loaders_[args.source_dataset]
     dataloader_target = loaders_[args.target_dataset]
     len_dataloader = min(len(dataloader_source), len(dataloader_target))
-    
+
     source = args.source_dataset.split("_")[0]
     target = args.target_dataset.split("_")[0]
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     torch.backends.cudnn.benchmark = True
-    
+
     # load model
     net = DANNModel()
 
@@ -54,7 +54,13 @@ def main(args):
     lr = 1e-3
     # setup optimizer
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr = lr, steps_per_epoch = len_dataloader, epochs = args.epochs, anneal_strategy = 'cos')
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        optimizer,
+        max_lr=lr,
+        steps_per_epoch=len_dataloader,
+        epochs=args.epochs,
+        anneal_strategy="cos",
+    )
 
     loss_class = torch.nn.NLLLoss()
     loss_domain = torch.nn.NLLLoss()
@@ -72,7 +78,7 @@ def main(args):
     d_t_train_metrics, d_t_val_metrics = set_metrics(device, num_classes=2)
     c_s_train_metrics, c_s_val_metrics = set_metrics(device, num_classes=31)
     c_t_train_metrics, c_t_val_metrics = set_metrics(device, num_classes=31)
-    
+
     # training
     results = []
     best_accu_t = 0.0
@@ -126,16 +132,18 @@ def main(args):
             err = err_t_domain + err_s_domain + err_s_label
             err.backward()
             optimizer.step()
-            
+
             # update metrics
-            d_t_train_metrics = update_metrics(d_t_train_metrics, domain_t_pred, domain_label)
+            d_t_train_metrics = update_metrics(
+                d_t_train_metrics, domain_t_pred, domain_label
+            )
             c_s_train_metrics = update_metrics(c_s_train_metrics, class_s_pred, s_label)
             c_t_train_metrics = update_metrics(c_t_train_metrics, class_t_pred, t_label)
             writer.add_scalar(f"Loss/domain/target/train", err_t_domain, epoch)
             writer.add_scalar(f"Loss/class/target/train", err_t_label, epoch)
             writer.add_scalar(f"Loss/class/source/train", err_s_label, epoch)
-            writer.add_scalar("Learning_rate", optimizer.param_groups[0]['lr'], epoch)
-            
+            writer.add_scalar("Learning_rate", optimizer.param_groups[0]["lr"], epoch)
+
             scheduler.step()
 
             sys.stdout.write(
@@ -156,31 +164,54 @@ def main(args):
                     args.model_path, source, target
                 ),
             )
-            
-        d_t_train_metrics = log_tensorboard(writer, "domain/target/train", d_t_train_metrics, epoch, source, target)
-        c_s_train_metrics = log_tensorboard(writer, "class/source/train", c_s_train_metrics, epoch, source, target)
-        c_t_train_metrics = log_tensorboard(writer, "class/target/train", c_t_train_metrics, epoch, source, target)
-            
+
+        d_t_train_metrics = log_tensorboard(
+            writer, "domain/target/train", d_t_train_metrics, epoch, source, target
+        )
+        c_s_train_metrics = log_tensorboard(
+            writer, "class/source/train", c_s_train_metrics, epoch, source, target
+        )
+        c_t_train_metrics = log_tensorboard(
+            writer, "class/target/train", c_t_train_metrics, epoch, source, target
+        )
+
         # Log RAM usage
         mem_info = psutil.virtual_memory()
-        ram_usage = mem_info.used / (1024 ** 3)  # RAM usage in GB
+        ram_usage = mem_info.used / (1024**3)  # RAM usage in GB
         writer.add_scalar("RAM usage", ram_usage, epoch)
-        
+
         # Log model parameters
         for name, param in net.named_parameters():
-            writer.add_histogram(f"Parameters/{name}", param.clone().cpu().data.numpy(), epoch)
-        
+            writer.add_histogram(
+                f"Parameters/{name}", param.clone().cpu().data.numpy(), epoch
+            )
+
         print("\n")
-        accu_s, f1_s, c_s_val_metrics = test(args, args.source_dataset, c_s_val_metrics, writer, "source", epoch)
+        accu_s, f1_s, c_s_val_metrics = test(
+            args, args.source_dataset, c_s_val_metrics, writer, "source", epoch
+        )
         print("Accuracy of the %s dataset: %f" % (source, accu_s))
-        accu_t, f1_t, c_t_val_metrics = test(args, args.target_dataset, c_t_val_metrics, writer, "target", epoch)
+        accu_t, f1_t, c_t_val_metrics = test(
+            args, args.target_dataset, c_t_val_metrics, writer, "target", epoch
+        )
         print("Accuracy of the %s dataset: %f\n" % (target, accu_t))
         if accu_t > best_accu_t:
             best_accu_s = accu_s
             best_accu_t = accu_t
             torch.save(net, f"{args.model_path}/{source}_{target}_model_epoch_best.pth")
-        results.append([epoch, err_s_label.data.detach().cpu().numpy(), err_s_domain.data.detach().cpu().numpy(), err_t_domain.data.detach().cpu().item(), accu_s, f1_s, accu_t, f1_t])
-    
+        results.append(
+            [
+                epoch,
+                err_s_label.data.detach().cpu().numpy(),
+                err_s_domain.data.detach().cpu().numpy(),
+                err_t_domain.data.detach().cpu().item(),
+                accu_s,
+                f1_s,
+                accu_t,
+                f1_t,
+            ]
+        )
+
     print("============ Summary ============= \n")
     print("Accuracy of the %s dataset: %f" % (source, best_accu_s))
     print("Accuracy of the %s dataset: %f" % (target, best_accu_t))
@@ -190,23 +221,38 @@ def main(args):
         + f"/{source}_{target}_model_epoch_best.pth"
     )
 
-    #results_pd = pd.DataFrame(results, columns=['Epoch', 'Source Label Error', 'Source Domain Error', 'Target Domain Error', 'Source Accuracy', 'Source F1', 'Target Accuracy', 'Target F1'])
-    #results_pd.to_csv(f"{source}_{target}_DANN_results.csv")
-    
+    # results_pd = pd.DataFrame(results, columns=['Epoch', 'Source Label Error', 'Source Domain Error', 'Target Domain Error', 'Source Accuracy', 'Source F1', 'Target Accuracy', 'Target F1'])
+    # results_pd.to_csv(f"{source}_{target}_DANN_results.csv")
+
     writer.close()
 
+
 if __name__ == "__main__":
-    
+
     argParser = argparse.ArgumentParser()
-    argParser.add_argument("-sd", "--source_dataset", default="amazon_source", type=str, help="training data name")
-    argParser.add_argument("-td", "--target_dataset", default="webcam_target", type=str, help="testing data name")
+    argParser.add_argument(
+        "-sd",
+        "--source_dataset",
+        default="amazon_source",
+        type=str,
+        help="training data name",
+    )
+    argParser.add_argument(
+        "-td",
+        "--target_dataset",
+        default="webcam_target",
+        type=str,
+        help="testing data name",
+    )
     argParser.add_argument("-dir", "--data_dir", help="directory where data is stored")
-    argParser.add_argument("-models", "--model_path", help="directory where to store model checkpoints")
+    argParser.add_argument(
+        "-models", "--model_path", help="directory where to store model checkpoints"
+    )
     argParser.add_argument("-bs", "--batch_size", default=128, type=int)
     argParser.add_argument("-ep", "--epochs", default=25, type=int)
-    
+
     args = argParser.parse_args()
-    
+
     """source_dataset_name = "amazon_source"
     target_dataset_name = "webcam_target"
     model_root = (

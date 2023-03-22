@@ -8,5 +8,6 @@ for j in ${targets[@]}; do
     CUDA_VISIBLE_DEVICES=7 python main.py \
         -sd "amazon_source" \
         -td $j \
+        -ep 30 \
         -models $model_path; \
 done

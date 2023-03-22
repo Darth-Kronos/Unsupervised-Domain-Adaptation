@@ -9,5 +9,6 @@ for j in ${targets[@]}; do
     CUDA_VISIBLE_DEVICES=8 python main.py \
         -sd "dslr_source" \
         -td $j \
+        -ep 30 \
         -models $model_path; \
 done

@@ -8,5 +8,6 @@ for j in ${targets[@]}; do
     CUDA_VISIBLE_DEVICES=9 python main.py \
         -sd "webcam_source" \
         -td $j \
+        -ep 30 \
         -models $model_path; \
 done

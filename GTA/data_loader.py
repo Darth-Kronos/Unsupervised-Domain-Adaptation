@@ -47,7 +47,7 @@ classes = [
 
 
 class Amazon(torch.utils.data.Dataset):
-    def __init__(self, path, transforms=None, batch_size=32):
+    def __init__(self, path, transforms=None, batch_size=64):
         self.path = path
         self.files = glob(os.path.join(path, "**", "*.jpg"), recursive=True)
         self.transforms = transforms
@@ -69,7 +69,7 @@ class Amazon(torch.utils.data.Dataset):
 
 
 class Webcam(torch.utils.data.Dataset):
-    def __init__(self, path, transforms=None, batch_size=32):
+    def __init__(self, path, transforms=None, batch_size=64):
         self.path = path
         self.files = glob(os.path.join(path, "**", "*.jpg"), recursive=True)
         self.transforms = transforms
@@ -91,7 +91,7 @@ class Webcam(torch.utils.data.Dataset):
 
 
 class DSLR(torch.utils.data.Dataset):
-    def __init__(self, path, transforms=None, batch_size=32):
+    def __init__(self, path, transforms=None, batch_size=64):
         self.path = path
         self.files = glob(os.path.join(path, "**", "*.jpg"), recursive=True)
         self.transforms = transforms
@@ -113,7 +113,7 @@ class DSLR(torch.utils.data.Dataset):
 
 
 # set up the 6 different loaders
-root = "../data"
+root = "/Users/purushothamanyadav/Documents/NCSU/Spring23/Adv ML/Unsupervised-Domain-Adaptation/data"
 transform = transforms.Compose(
     [
         transforms.Resize(64),
@@ -123,7 +123,7 @@ transform = transforms.Compose(
 )
 amazon_source = torch.utils.data.DataLoader(
     Amazon(path=os.path.join(root, "amazon"), transforms=transform),
-    batch_size=32,
+    batch_size=64,
     shuffle=True,
     num_workers=8,
     pin_memory=True,
@@ -131,7 +131,7 @@ amazon_source = torch.utils.data.DataLoader(
 )
 amazon_target = torch.utils.data.DataLoader(
     Amazon(path=os.path.join(root, "amazon"), transforms=transform),
-    batch_size=32,
+    batch_size=64,
     shuffle=False,
     num_workers=8,
     pin_memory=True,
@@ -140,7 +140,7 @@ amazon_target = torch.utils.data.DataLoader(
 
 webcam_source = torch.utils.data.DataLoader(
     Webcam(path=os.path.join(root, "webcam"), transforms=transform),
-    batch_size=32,
+    batch_size=64,
     shuffle=True,
     num_workers=8,
     pin_memory=True,
@@ -148,7 +148,7 @@ webcam_source = torch.utils.data.DataLoader(
 )
 webcam_target = torch.utils.data.DataLoader(
     Webcam(path=os.path.join(root, "webcam"), transforms=transform),
-    batch_size=32,
+    batch_size=64,
     shuffle=False,
     num_workers=8,
     pin_memory=True,
@@ -157,7 +157,7 @@ webcam_target = torch.utils.data.DataLoader(
 
 dslr_source = torch.utils.data.DataLoader(
     DSLR(path=os.path.join(root, "dslr"), transforms=transform),
-    batch_size=32,
+    batch_size=64,
     shuffle=True,
     num_workers=8,
     pin_memory=True,
@@ -165,7 +165,7 @@ dslr_source = torch.utils.data.DataLoader(
 )
 dslr_target = torch.utils.data.DataLoader(
     DSLR(path=os.path.join(root, "dslr"), transforms=transform),
-    batch_size=32,
+    batch_size=64,
     shuffle=False,
     num_workers=8,
     pin_memory=True,

@@ -60,28 +60,29 @@ class Discriminator(nn.Module):
         
         # self.ndf = opt.ndim//2
         self.feature = nn.Sequential(
-            nn.Conv2d(3, 128, 5, 1, 1),            
+            nn.Conv2d(3, 128, 5, 1, 1, bias=False),            
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.MaxPool2d(2,2),
 
-            nn.Conv2d(128, 128, 5, 1, 1),         
+            nn.Conv2d(128, 128, 5, 1, 1, bias=False),         
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.MaxPool2d(2,2),
             
 
-            nn.Conv2d(128, 128, 5, 1, 1),           
+            nn.Conv2d(128, 128, 5, 1, 1, bias=False),           
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.MaxPool2d(2,2),
             
-            nn.Conv2d(128, 128, 5, 1, 1),           
+            nn.Conv2d(128, 128, 5, 1, 1, bias=False),           
             nn.LeakyReLU(0.2, inplace=True),
             nn.MaxPool2d(4,4)         
         )        
         self.extra_layers = nn.Sequential(
             nn.Linear(128, 500),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(500, 500)
         )
         # aux-classifier fc
@@ -136,7 +137,8 @@ class Classifier(nn.Module):
         #     nn.Linear(2*self.ndf, nclasses),                         
         # )
         self.main = nn.Sequential(
-            nn.Linear(2048, nclasses)
+            nn.Linear(2048, nclasses),
+            nn.Softmax()
         )
     def forward(self, input):       
         output = self.main(input)
@@ -294,20 +296,20 @@ class gta:
                 source_embedds = self.featureExtractor(source_images) # 2048 size embedds
                 source_embedds_label = torch.cat((source_labels_onehot, source_embedds), 1)
 
-                source_gen = self.generator(source_embedds_label).detach()
+                source_gen = self.generator(source_embedds_label)
 
                 target_embedds = self.featureExtractor(target_images)
                 target_embedds_label = torch.cat((target_labels_onehot, target_embedds),1)
-                target_gen = self.generator(target_embedds_label).detach()
+                target_gen = self.generator(target_embedds_label)
 
                 source_real_D_s, source_real_D_c = self.discriminator(source_images)   
                 errD_src_real_s = self.source_loss(source_real_D_s, real_label) 
                 errD_src_real_c = self.aux_loss(source_real_D_c, source_labels) 
 
-                source_fake_D_s, source_fake_D_c = self.discriminator(source_gen)
+                source_fake_D_s, source_fake_D_c = self.discriminator(source_gen.detach())
                 errD_src_fake_s = self.source_loss(source_fake_D_s, fake_label)
 
-                target_fake_D_s, target_fake_D_c = self.discriminator(target_gen)          
+                target_fake_D_s, target_fake_D_c = self.discriminator(target_gen.detach())          
                 errD_tgt_fake_s = self.source_loss(target_fake_D_s, fake_label)
 
                 errD = errD_src_real_c + errD_src_real_s + errD_src_fake_s + errD_tgt_fake_s

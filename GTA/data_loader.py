@@ -113,7 +113,7 @@ class DSLR(torch.utils.data.Dataset):
 
 
 # set up the 6 different loaders
-root = "/Users/purushothamanyadav/Documents/NCSU/Spring23/Adv ML/Unsupervised-Domain-Adaptation/data"
+root = "Unsupervised-Domain-Adaptation/data"
 transform = transforms.Compose(
     [
         transforms.Resize(64),

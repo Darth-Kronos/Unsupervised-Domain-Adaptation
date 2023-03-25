@@ -7,8 +7,7 @@ export model_path="/home/gmvincen/class_work/ece_792/Unsupervised-Domain-Adaptat
 for j in ${targets[@]}; do
     echo "dslr_source and" $j
     CUDA_VISIBLE_DEVICES=8 python main.py \
-        -sd "dslr_source" \
-        -td $j \
-        -ep 30 \
-        -models $model_path; \
+        --source_dataset "dslr_source" \
+        --target_dataset $j \
+        --perturb false; \
 done

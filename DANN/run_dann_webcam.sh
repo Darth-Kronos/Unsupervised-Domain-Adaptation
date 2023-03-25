@@ -6,8 +6,7 @@ export model_path="/home/gmvincen/class_work/ece_792/Unsupervised-Domain-Adaptat
 for j in ${targets[@]}; do
     echo "webcam_source and" $j
     CUDA_VISIBLE_DEVICES=9 python main.py \
-        -sd "webcam_source" \
-        -td $j \
-        -ep 30 \
-        -models $model_path; \
+        --source_dataset "webcam_source" \
+        --target_dataset $j \
+        --perturb false; \
 done

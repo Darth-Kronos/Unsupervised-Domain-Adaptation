@@ -1,5 +1,5 @@
 import torch
-from torchvision.models import resnet50, alexnet, ResNet50_Weights
+from torchvision.models import resnet50, alexnet, ResNet50_Weights, AlexNet_Weights
 
 class ReverseLayerF(torch.autograd.Function):
     def forward(self, x, alpha):

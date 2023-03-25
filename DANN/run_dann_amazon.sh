@@ -6,8 +6,7 @@ export model_path="/home/gmvincen/class_work/ece_792/Unsupervised-Domain-Adaptat
 for j in ${targets[@]}; do
     echo "amazon_source and" $j
     CUDA_VISIBLE_DEVICES=7 python main.py \
-        -sd "amazon_source" \
-        -td $j \
-        -ep 30 \
-        -models $model_path; \
+        --source_dataset "amazon_source" \
+        --target_dataset $j \
+        --perturb false; \
 done

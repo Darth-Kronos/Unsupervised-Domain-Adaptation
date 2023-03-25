@@ -6,7 +6,7 @@ import torch.utils.data
 from model import DANNModel
 from torchvision import datasets, transforms
 from torchmetrics.classification import F1Score
-from metrics import update_metrics, log_tensorboard
+from utils.metrics import update_metrics, log_tensorboard
 
 from data_loader import (
     amazon_source,
@@ -44,16 +44,16 @@ def test(args, dataset_name, metrics, writer, tag, epoch):
     alpha = 0
 
     """ test """
-    my_net = torch.load(
-        os.path.join(args.model_path, f"{source}_{target}_model_epoch_current.pth")
+    net = torch.load(
+        os.path.join(args.model_path, f"{source}_{target}_model_epoch_{epoch}.pth")
     )
-    my_net = my_net.eval()
+    net = net.eval()
     f1 = F1Score(task="multiclass", num_classes=31)
 
     loss_class = torch.nn.NLLLoss()
 
     if device == "cuda":
-        my_net = my_net.to(device)
+        net = net.to(device)
         loss_class = loss_class.to(device)
 
     len_dataloader = len(dataloader)
@@ -75,7 +75,7 @@ def test(args, dataset_name, metrics, writer, tag, epoch):
             t_img = t_img.to(device)
             t_label = t_label.to(device)
 
-        class_output, _ = my_net(input=t_img, alpha=alpha)
+        class_output, _ = net(input=t_img, alpha=alpha)
         err_t_label = loss_class(class_output, t_label)
 
         pred = torch.argmax(class_output, dim=1)

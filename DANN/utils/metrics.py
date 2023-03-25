@@ -43,31 +43,29 @@ def log_tensorboard(writer, tag, metrics, epoch, source, target):
     writer.add_scalar(f"F1-Macro/{tag}", metrics["F1-Macro"].compute(), epoch)
     writer.add_scalar(f"Recall/{tag}", metrics["Recall"].compute(), epoch)
 
-    if "domain" in tag:
-        names = [source, target]
-    else:
+    if "class" in tag:
         names = classes
-    if source is not None and target is not None:
-        confusion_matrix = metrics["ConfusionMatrix"].compute()
+        if source is not None and target is not None:
+            confusion_matrix = metrics["ConfusionMatrix"].compute()
 
-        fig, ax = plt.subplots(figsize=(12, 12))
-        plt.rcParams.update({"font.size": 14})
-        sns.heatmap(
-            confusion_matrix.cpu(),
-            annot=False,
-            fmt=".2f",
-            cmap="Blues",
-            ax=ax,
-            square=True,
-            cbar=False,
-            xticklabels=names,
-            yticklabels=names,
-        )
-        ax.set_xlabel("Predicted")
-        ax.set_ylabel("Actual")
+            fig, ax = plt.subplots(figsize=(12, 12))
+            plt.rcParams.update({"font.size": 14})
+            sns.heatmap(
+                confusion_matrix.cpu(),
+                annot=False,
+                fmt=".2f",
+                cmap="Blues",
+                ax=ax,
+                square=True,
+                cbar=False,
+                xticklabels=names,
+                yticklabels=names,
+            )
+            ax.set_xlabel("Predicted")
+            ax.set_ylabel("Actual")
 
-        # add the image to TensorBoard
-        writer.add_figure(f"Confusion Matrix/{tag}", fig, epoch)
+            # add the image to TensorBoard
+            writer.add_figure(f"Confusion Matrix/{tag}", fig, epoch)
 
     metrics["Accuracy"].reset()
     metrics["F1-Macro"].reset()

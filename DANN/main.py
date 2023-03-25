@@ -11,9 +11,11 @@ import torchvision
 from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 
-from metrics import set_metrics, update_metrics, log_tensorboard
+from utils.perturb import perturb_loader
+from utils.parse_args import parse_args
+from utils.metrics import set_metrics, update_metrics, log_tensorboard
 from model import DANNModel
-from test import test
+from utils.test import test
 from data_loader import (
     amazon_source,
     amazon_target,
@@ -40,7 +42,9 @@ def main(args):
     dataloader_source = loaders_[args.source_dataset]
     dataloader_target = loaders_[args.target_dataset]
     len_dataloader = min(len(dataloader_source), len(dataloader_target))
-
+    if args.perturb:
+        print("Perturbing training dataloaders")
+    
     source = args.source_dataset.split("_")[0]
     target = args.target_dataset.split("_")[0]
 
@@ -50,13 +54,11 @@ def main(args):
     # load model
     net = DANNModel()
 
-    # set learning rate
-    lr = 1e-3
     # setup optimizer
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer,
-        max_lr=lr,
+        max_lr=args.lr,
         steps_per_epoch=len_dataloader,
         epochs=args.epochs,
         anneal_strategy="cos",
@@ -73,7 +75,10 @@ def main(args):
     for p in net.parameters():
         p.requires_grad = True
 
-    log_dir = f"runs/{source}_{target}_DANN"
+    if args.perturb:
+        log_dir = f"{args.tensorboard_log_dir}/{source}_{target}_{args.encoder}_perturbed"
+    else:
+        log_dir = f"{args.tensorboard_log_dir}/{source}_{target}_{args.encoder}"
     writer = SummaryWriter(log_dir=log_dir)  # create a TensorBoard writer
     d_t_train_metrics, d_t_val_metrics = set_metrics(device, num_classes=2)
     c_s_train_metrics, c_s_val_metrics = set_metrics(device, num_classes=31)
@@ -94,7 +99,11 @@ def main(args):
 
             # training model using source data
             data_source = next(data_source_iter)
-            s_img, s_label = data_source
+            
+            if args.perturb:
+                s_img, s_label = perturb_loader(data_source)
+            else:
+                s_img, s_label = data_source
 
             net.zero_grad()
             batch_size = len(s_label)
@@ -113,7 +122,10 @@ def main(args):
 
             # training model using target data
             data_target = next(data_target_iter)
-            t_img, t_label = data_target
+            if args.perturb:
+                t_img, t_label = perturb_loader(data_target)
+            else:
+                t_img, t_label = data_target
 
             batch_size = len(t_img)
 
@@ -142,7 +154,7 @@ def main(args):
             writer.add_scalar(f"Loss/domain/target/train", err_t_domain, epoch)
             writer.add_scalar(f"Loss/class/target/train", err_t_label, epoch)
             writer.add_scalar(f"Loss/class/source/train", err_s_label, epoch)
-            writer.add_scalar(f"Loss/overall", err, epoch)
+            writer.add_scalar(f"Loss/overall/train", err, epoch)
             writer.add_scalar("Learning_rate", optimizer.param_groups[0]["lr"], epoch)
 
             scheduler.step()
@@ -160,10 +172,7 @@ def main(args):
             )
             sys.stdout.flush()
             torch.save(
-                net,
-                "{0}/{1}_{2}_model_epoch_current.pth".format(
-                    args.model_path, source, target
-                ),
+                net,f"{args.model_path}/{source}_{target}_model_epoch_{epoch}.pth",
             )
 
         d_t_train_metrics = log_tensorboard(
@@ -212,6 +221,9 @@ def main(args):
                 f1_t,
             ]
         )
+        
+        if epoch != (args.epochs-1):
+            os.remove(f"{args.model_path}/{source}_{target}_model_epoch_{epoch}.pth")
 
     print("============ Summary ============= \n")
     print("Accuracy of the %s dataset: %f" % (source, best_accu_s))
@@ -229,7 +241,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-
+    """
     argParser = argparse.ArgumentParser()
     argParser.add_argument(
         "-sd",
@@ -251,12 +263,7 @@ if __name__ == "__main__":
     )
     argParser.add_argument("-bs", "--batch_size", default=128, type=int)
     argParser.add_argument("-ep", "--epochs", default=25, type=int)
+    """
+    args = parse_args()
 
-    args = argParser.parse_args()
-
-    """source_dataset_name = "amazon_source"
-    target_dataset_name = "webcam_target"
-    model_root = (
-        "/home/gmvincen/class_work/ece_792/Unsupervised-Domain-Adaptation/DANN/models"
-    )"""
     main(args)

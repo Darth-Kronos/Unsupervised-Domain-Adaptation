@@ -19,7 +19,7 @@ class Generator(nn.Module):
         self.nclasses = nclasses
 
         self.block = nn.Sequential(
-            nn.ConvTranspose2d(self.nz+self.ndim+nclasses+1, self.ngf*8, 2, 1, 0, bias=False),
+            nn.ConvTranspose2d(self.nz+self.ndim+nclasses+1, self.ngf*8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(self.ngf*8),
             nn.ReLU(True),
 
@@ -31,9 +31,9 @@ class Generator(nn.Module):
             nn.BatchNorm2d(self.ngf*2),
             nn.ReLU(True),
 
-            nn.ConvTranspose2d(self.ngf*2, self.ngf*2, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(self.ngf*2),
-            nn.ReLU(True),
+            # nn.ConvTranspose2d(self.ngf*2, self.ngf*2, 4, 2, 1, bias=False),
+            # nn.BatchNorm2d(self.ngf*2),
+            # nn.ReLU(True),
 
             nn.ConvTranspose2d(self.ngf*2, self.ngf, 4, 2, 1, bias=False),
             nn.BatchNorm2d(self.ngf),
@@ -58,48 +58,46 @@ class Discriminator(nn.Module):
     def __init__(self, opt, nclasses):
         super().__init__()
         
-        # self.ndf = opt.ndim//2
+        self.ndf = 64
         self.feature = nn.Sequential(
-            nn.Conv2d(3, 128, 5, 1, 1, bias=False),            
-            nn.BatchNorm2d(128),
+            nn.Conv2d(3, self.ndf, 4, 2, 1, bias=False),            
+            nn.BatchNorm2d(self.ndf),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.MaxPool2d(2,2),
+            # nn.MaxPool2d(2,2),
 
-            nn.Conv2d(128, 128, 5, 1, 1, bias=False),         
-            nn.BatchNorm2d(128),
+            nn.Conv2d(self.ndf, self.ndf*2, 4, 2, 1, bias=False),         
+            nn.BatchNorm2d(self.ndf*2),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.MaxPool2d(2,2),
+            # nn.MaxPool2d(2,2),
             
 
-            nn.Conv2d(128, 128, 5, 1, 1, bias=False),           
-            nn.BatchNorm2d(128),
+            nn.Conv2d(self.ndf*2, self.ndf*4, 4, 2, 1, bias=False),           
+            nn.BatchNorm2d(self.ndf*4),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.MaxPool2d(2,2),
+            # nn.MaxPool2d(2,2),
             
-            nn.Conv2d(128, 128, 5, 1, 1, bias=False),           
+            nn.Conv2d(self.ndf*4, self.ndf*8, 4, 2, 1, bias=False),           
+            nn.BatchNorm2d(self.ndf*8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.MaxPool2d(4,4)         
-        )        
-        self.extra_layers = nn.Sequential(
-            nn.Linear(128, 500),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(500, 500)
-        )
+            # nn.MaxPool2d(4,4)
+
+            nn.Conv2d(self.ndf*8, self.ndf, 4, 1, 0, bias=False)           
+        )      
+        
         # aux-classifier fc
-        self.aux_classifier = nn.Linear(500, nclasses)
+        self.aux_classifier = nn.Linear(self.ndf, nclasses)
         # discriminator fc
         self.source_classifier = nn.Sequential(
-        						nn.Linear(500, 1), 
+        						nn.Linear(self.ndf, 1), 
         						nn.Sigmoid())
 
 
 
     def forward(self, input):       
-        output_1 = self.feature(input)
-        output = self.extra_layers(output_1.view(-1, 128))
-        output_s = self.source_classifier(output)
+        output = self.feature(input)
+        output_s = self.classifier_s(output.view(-1, self.ndf))
         output_s = output_s.view(-1)
-        output_c = self.aux_classifier(output)
+        output_c = self.classifier_c(output.view(-1, self.ndf))
         return output_s, output_c
 
 # Pretrainied Resnet50
@@ -138,7 +136,7 @@ class Classifier(nn.Module):
         # )
         self.main = nn.Sequential(
             nn.Linear(2048, nclasses),
-            nn.Softmax()
+            # nn.Softmax()
         )
     def forward(self, input):       
         output = self.main(input)
@@ -296,16 +294,19 @@ class gta:
                 source_embedds = self.featureExtractor(source_images) # 2048 size embedds
                 source_embedds_label = torch.cat((source_labels_onehot, source_embedds), 1)
 
-                source_gen = self.generator(source_embedds_label)
 
                 target_embedds = self.featureExtractor(target_images)
                 target_embedds_label = torch.cat((target_labels_onehot, target_embedds),1)
+                
+                source_gen = self.generator(source_embedds_label)
                 target_gen = self.generator(target_embedds_label)
-
+                
+                # Train with real
                 source_real_D_s, source_real_D_c = self.discriminator(source_images)   
                 errD_src_real_s = self.source_loss(source_real_D_s, real_label) 
                 errD_src_real_c = self.aux_loss(source_real_D_c, source_labels) 
-
+                
+                #Train with fake
                 source_fake_D_s, source_fake_D_c = self.discriminator(source_gen.detach())
                 errD_src_fake_s = self.source_loss(source_fake_D_s, fake_label)
 
@@ -341,8 +342,8 @@ class gta:
                 # Training F network
                
                 self.featureExtractor.zero_grad()
-                outC = self.classifier(source_embedds)
-                errF_fromC = self.aux_loss(outC, source_labels)        
+                # outC = self.classifier(source_embedds)
+                errF_fromC = self.aux_loss(outC.detach(), source_labels)        
 
                 source_fake_D_s, source_fake_D_c = self.discriminator(source_gen)
                 errF_src_fromD = self.aux_loss(source_fake_D_c, source_labels)*(self.opt.adv_weight)

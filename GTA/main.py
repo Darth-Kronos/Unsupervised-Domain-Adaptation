@@ -31,7 +31,7 @@ parser.add_argument('--ndim', type=int, default=2048, help='Number of filters to
 parser.add_argument('--epochs', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--lr', type=float, default=0.0005, help='learning rate, default=0.0002')
 parser.add_argument('--beta1', type=float, default=0.7, help='beta1 for adam. default=0.5')
-parser.add_argument('--gpu', type=int, default=-1, help='GPU to use, -1 for CPU training')
+parser.add_argument('--gpu', type=int, default=1, help='GPU to use, -1 for CPU training')
 parser.add_argument('--outf', default='results', help='folder to output images and model checkpoints')
 # parser.add_argument('--method', default='GTA', help='Method to train| GTA, sourceonly')
 # parser.add_argument('--manualSeed', type=int, help='manual seed')

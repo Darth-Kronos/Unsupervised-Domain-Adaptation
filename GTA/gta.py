@@ -95,9 +95,9 @@ class Discriminator(nn.Module):
 
     def forward(self, input):       
         output = self.feature(input)
-        output_s = self.classifier_s(output.view(-1, self.ndf))
+        output_s = self.source_classifier(output.view(-1, self.ndf))
         output_s = output_s.view(-1)
-        output_c = self.classifier_c(output.view(-1, self.ndf))
+        output_c = self.aux_classifier(output.view(-1, self.ndf))
         return output_s, output_c
 
 # Pretrainied Resnet50
@@ -189,7 +189,10 @@ class gta:
 
     # validation function
     def validate(self, epoch):
-        
+        if self.opt.gpu == 1:
+            device = "gpu"
+        else:
+            device = "cpu"
         self.featureExtractor.eval()
         self.classifier.eval()
         total = 0
@@ -197,37 +200,37 @@ class gta:
     
         # Testing the model
         for i, source_data in enumerate(self.source_valloader):
-            inputs, labels = source_data         
-            inputv, labelv = Variable(inputs.cuda(), volatile=True), Variable(labels.cuda()) 
+            inputs, labels = source_data
+            inputv, labelv = Variable(inputs.to(device), volatile=True), Variable(labels.to(device))
 
             outC = self.classifier(self.featureExtractor(inputv))
-            _, predicted = torch.max(outC.data, 1)        
+            _, predicted = torch.max(outC.data, 1)
             total += labels.size(0)
-            correct += ((predicted == labels.cuda()).sum())
-            
+            correct += ((predicted == labels.to(device)).sum())
+
         val_acc = 100*float(correct)/total
 
         total = 0
         correct = 0
-    
+
         # Testing the model
         for i, target_data in enumerate(self.target_loader):
-            inputs, labels = target_data         
-            inputv, labelv = Variable(inputs.cuda(), volatile=True), Variable(labels.cuda()) 
+            inputs, labels = target_data
+            inputv, labelv = Variable(inputs.to(device), volatile=True), Variable(labels.to(device))
 
             outC = self.classifier(self.featureExtractor(inputv))
-            _, predicted = torch.max(outC.data, 1)        
+            _, predicted = torch.max(outC.data, 1)
             total += labels.size(0)
-            correct += ((predicted == labels.cuda()).sum())
-            
+            correct += ((predicted == labels.to(device)).sum())
+
         acc_tar = 100*float(correct)/total
 
         print(f'Epoch: {epoch}, Val Accuracy: {val_acc}, Target Accuracy: {acc_tar}')
-    
+
         # Saving checkpoints
         torch.save(self.featureExtractor.state_dict(), '%s/models/featureExtractor.pth' %(self.opt.outf))
         torch.save(self.classifier.state_dict(), '%s/models/classifier.pth' %(self.opt.outf))
-        
+
         if val_acc>self.best_val:
             self.best_val = val_acc
             torch.save(self.featureExtractor.state_dict(), '%s/models/model_best_featureExtractor.pth' %(self.opt.outf))
@@ -345,10 +348,10 @@ class gta:
                 # outC = self.classifier(source_embedds)
                 errF_fromC = self.aux_loss(outC.detach(), source_labels)        
 
-                source_fake_D_s, source_fake_D_c = self.discriminator(source_gen)
+                source_fake_D_s, source_fake_D_c = self.discriminator(source_gen.detach())
                 errF_src_fromD = self.aux_loss(source_fake_D_c, source_labels)*(self.opt.adv_weight)
 
-                target_fake_D_s, target_fake_D_c = self.discriminator(target_gen)
+                target_fake_D_s, target_fake_D_c = self.discriminator(target_gen.detach())
                 errF_tgt_fromD = self.source_loss(target_fake_D_s, real_label)*(self.opt.adv_weight*self.opt.alpha)
                 
                 errF = errF_fromC + errF_src_fromD + errF_tgt_fromD

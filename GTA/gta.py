@@ -292,72 +292,77 @@ class gta:
                 
                 
                 # Training D network
-                
-                self.discriminator.zero_grad()
-                source_embedds = self.featureExtractor(source_images) # 2048 size embedds
-                source_embedds_label = torch.cat((source_labels_onehot, source_embedds), 1)
+                with torch.autograd.set_detect_anomaly(True):
+                    self.discriminator.zero_grad()
+                    source_embedds = self.featureExtractor(source_images) # 2048 size embedds
+                    source_embedds_label = torch.cat((source_labels_onehot, source_embedds), 1) # concat with label
 
 
-                target_embedds = self.featureExtractor(target_images)
-                target_embedds_label = torch.cat((target_labels_onehot, target_embedds),1)
-                
-                source_gen = self.generator(source_embedds_label)
-                target_gen = self.generator(target_embedds_label)
-                
-                # Train with real
-                source_real_D_s, source_real_D_c = self.discriminator(source_images)   
-                errD_src_real_s = self.source_loss(source_real_D_s, real_label) 
-                errD_src_real_c = self.aux_loss(source_real_D_c, source_labels) 
-                
-                #Train with fake
-                source_fake_D_s, source_fake_D_c = self.discriminator(source_gen.detach())
-                errD_src_fake_s = self.source_loss(source_fake_D_s, fake_label)
+                    target_embedds = self.featureExtractor(target_images)
+                    target_embedds_label = torch.cat((target_labels_onehot, target_embedds),1)
+                    
+                    
+                    source_gen = self.generator(source_embedds_label)
+                    target_gen = self.generator(target_embedds_label)
+                    
+                    copy_source_gen = self.generator(source_embedds_label)
+                    copy_target_gen = self.generator(target_embedds_label)
+                    # Train with real
+                    source_real_D_s, source_real_D_c = self.discriminator(source_images)   
+                    errD_src_real_s = self.source_loss(source_real_D_s, real_label) 
+                    errD_src_real_c = self.aux_loss(source_real_D_c, source_labels) 
+                    
+                    #Train with fake
+                    source_fake_D_s, source_fake_D_c = self.discriminator(source_gen.detach())
+                    errD_src_fake_s = self.source_loss(source_fake_D_s, fake_label)
 
-                target_fake_D_s, target_fake_D_c = self.discriminator(target_gen.detach())          
-                errD_tgt_fake_s = self.source_loss(target_fake_D_s, fake_label)
+                    target_fake_D_s, target_fake_D_c = self.discriminator(target_gen.detach())          
+                    errD_tgt_fake_s = self.source_loss(target_fake_D_s, fake_label)
 
-                errD = errD_src_real_c + errD_src_real_s + errD_src_fake_s + errD_tgt_fake_s
-                errD.backward(retain_graph=True)    
-                self.optimizerD.step()
-                
-
-                # Training G network
-                
-                self.generator.zero_grad()       
-                source_fake_D_s, source_fake_D_c = self.discriminator(source_gen)
-                errG_c = self.aux_loss(source_fake_D_c, source_labels)
-                errG_s = self.source_loss(source_fake_D_s, real_label)
-                errG = errG_c + errG_s
-                errG.backward(retain_graph=True)
-                self.optimizerG.step()
-                
-
-                # Training C network
-                
-                self.classifier.zero_grad()
-                outC = self.classifier(source_embedds)   
-                errC = self.aux_loss(outC, source_labels)
-                # errC = Variable(errC, requires_grad=True)
-                errC.backward(retain_graph=True)    
-                self.optimizerC.step()
+                    errD = errD_src_real_c + errD_src_real_s + errD_src_fake_s + errD_tgt_fake_s
+                    errD.backward()    
+                    self.optimizerD.step()
+                    
+                    save_d = list(self.discriminator.parameters())
+                    # Training G network
+                    
+                    self.generator.zero_grad()       
+                    source_fake_D_s, source_fake_D_c = self.discriminator(source_gen)
+                    errG_c = self.aux_loss(source_fake_D_c, source_labels)
+                    errG_s = self.source_loss(source_fake_D_s, real_label)
+                    errG = errG_c + errG_s
+                    errG.backward()
+                    self.optimizerG.step()
+                    
+                        
+                    # Training C network
+                    
+                    self.classifier.zero_grad()
+                    outC = self.classifier(source_embedds.detach())   
+                    errC = self.aux_loss(outC, source_labels)
+                    # errC = Variable(errC, requires_grad=True)
+                    errC.backward()    
+                    self.optimizerC.step()
 
                 
                 # Training F network
-               
-                self.featureExtractor.zero_grad()
-                # outC = self.classifier(source_embedds)
-                errF_fromC = self.aux_loss(outC.detach(), source_labels)        
+                # with torch.autograd.set_detect_anomaly(True):
+                    self.featureExtractor.zero_grad()
+                    # outC = self.classifier(source_embedds)
+                    errF_fromC = self.aux_loss(outC, source_labels)        
+                    
 
-                source_fake_D_s, source_fake_D_c = self.discriminator(source_gen.detach())
-                errF_src_fromD = self.aux_loss(source_fake_D_c, source_labels)*(self.opt.adv_weight)
+                    source_fake_D_s, source_fake_D_c = self.discriminator(copy_source_gen) # real ->F -> G -> source gen 
+                    errF_src_fromD = self.aux_loss(source_fake_D_c, source_labels)*(self.opt.adv_weight)
 
-                target_fake_D_s, target_fake_D_c = self.discriminator(target_gen.detach())
-                errF_tgt_fromD = self.source_loss(target_fake_D_s, real_label)*(self.opt.adv_weight*self.opt.alpha)
-                
-                errF = errF_fromC + errF_src_fromD + errF_tgt_fromD
-                errF.backward(retain_graph=True)
-                self.optimizerF.step()        
-                
+                    target_fake_D_s, target_fake_D_c = self.discriminator(copy_target_gen)
+                    errF_tgt_fromD = self.source_loss(target_fake_D_s, real_label)*(self.opt.adv_weight*self.opt.alpha)
+                    
+                    # errF = errF_fromC + errF_src_fromD + errF_tgt_fromD
+                    errF = errF_fromC
+                    errF.backward()
+                    self.optimizerF.step()        
+                    print("done")
                 curr_iter += 1
                 
                     

@@ -2,7 +2,6 @@ import os
 import sys
 import random
 import numpy as np
-import pandas as pd
 import argparse
 import psutil
 
@@ -11,7 +10,7 @@ import torchvision
 from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 
-from utils.perturb import perturb_loader
+from utils.perturb import run_perturbations
 from utils.parse_args import parse_args
 from utils.metrics import set_metrics, update_metrics, log_tensorboard
 from model import DANNModel
@@ -42,9 +41,7 @@ def main(args):
     dataloader_source = loaders_[args.source_dataset]
     dataloader_target = loaders_[args.target_dataset]
     len_dataloader = min(len(dataloader_source), len(dataloader_target))
-    if args.perturb:
-        print("Perturbing training dataloaders")
-    
+
     source = args.source_dataset.split("_")[0]
     target = args.target_dataset.split("_")[0]
 
@@ -85,7 +82,6 @@ def main(args):
     c_t_train_metrics, c_t_val_metrics = set_metrics(device, num_classes=31)
 
     # training
-    results = []
     best_accu_t = 0.0
     for epoch in range(args.epochs):
 
@@ -99,11 +95,7 @@ def main(args):
 
             # training model using source data
             data_source = next(data_source_iter)
-            
-            if args.perturb:
-                s_img, s_label = perturb_loader(data_source)
-            else:
-                s_img, s_label = data_source
+            s_img, s_label = data_source
 
             net.zero_grad()
             batch_size = len(s_label)
@@ -122,10 +114,7 @@ def main(args):
 
             # training model using target data
             data_target = next(data_target_iter)
-            if args.perturb:
-                t_img, t_label = perturb_loader(data_target)
-            else:
-                t_img, t_label = data_target
+            t_img, t_label = data_target
 
             batch_size = len(t_img)
 
@@ -190,12 +179,6 @@ def main(args):
         ram_usage = mem_info.used / (1024**3)  # RAM usage in GB
         writer.add_scalar("RAM usage", ram_usage, epoch)
 
-        # Log model parameters
-        for name, param in net.named_parameters():
-            writer.add_histogram(
-                f"Parameters/{name}", param.clone().cpu().data.numpy(), epoch
-            )
-
         print("\n")
         accu_s, f1_s, c_s_val_metrics = test(
             args, args.source_dataset, c_s_val_metrics, writer, "source", epoch
@@ -209,18 +192,7 @@ def main(args):
             best_accu_s = accu_s
             best_accu_t = accu_t
             torch.save(net, f"{args.model_path}/{source}_{target}_model_epoch_best.pth")
-        results.append(
-            [
-                epoch,
-                err_s_label.data.detach().cpu().numpy(),
-                err_s_domain.data.detach().cpu().numpy(),
-                err_t_domain.data.detach().cpu().item(),
-                accu_s,
-                f1_s,
-                accu_t,
-                f1_t,
-            ]
-        )
+
         
         if epoch != (args.epochs-1):
             os.remove(f"{args.model_path}/{source}_{target}_model_epoch_{epoch}.pth")
@@ -234,36 +206,14 @@ def main(args):
         + f"/{source}_{target}_model_epoch_best.pth"
     )
 
-    # results_pd = pd.DataFrame(results, columns=['Epoch', 'Source Label Error', 'Source Domain Error', 'Target Domain Error', 'Source Accuracy', 'Source F1', 'Target Accuracy', 'Target F1'])
-    # results_pd.to_csv(f"{source}_{target}_DANN_results.csv")
-
+    if args.perturb:
+        print("==== Perturbing Target Dataloader ==== \n")
+        run_perturbations(args, writer, dataloader=dataloader_target)
+    
     writer.close()
 
 
 if __name__ == "__main__":
-    """
-    argParser = argparse.ArgumentParser()
-    argParser.add_argument(
-        "-sd",
-        "--source_dataset",
-        default="amazon_source",
-        type=str,
-        help="training data name",
-    )
-    argParser.add_argument(
-        "-td",
-        "--target_dataset",
-        default="webcam_target",
-        type=str,
-        help="testing data name",
-    )
-    argParser.add_argument("-dir", "--data_dir", help="directory where data is stored")
-    argParser.add_argument(
-        "-models", "--model_path", help="directory where to store model checkpoints"
-    )
-    argParser.add_argument("-bs", "--batch_size", default=128, type=int)
-    argParser.add_argument("-ep", "--epochs", default=25, type=int)
-    """
     args = parse_args()
 
     main(args)

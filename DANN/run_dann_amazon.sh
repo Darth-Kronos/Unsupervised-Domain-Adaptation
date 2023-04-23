@@ -8,5 +8,5 @@ for j in ${targets[@]}; do
     CUDA_VISIBLE_DEVICES=7 python main.py \
         --source_dataset "amazon_source" \
         --target_dataset $j \
-        --perturb false; \
+        --perturb true; \
 done

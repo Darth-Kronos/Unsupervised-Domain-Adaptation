@@ -8,5 +8,5 @@ for j in ${targets[@]}; do
     CUDA_VISIBLE_DEVICES=9 python main.py \
         --source_dataset "webcam_source" \
         --target_dataset $j \
-        --perturb false; \
+        --perturb true; \
 done

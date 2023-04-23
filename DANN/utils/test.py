@@ -83,16 +83,18 @@ def test(args, dataset_name, metrics, writer, tag, epoch):
         n_total += batch_size
 
         # update val metrics
-        metrics = update_metrics(metrics, pred, t_label)
-        writer.add_scalar(f"Loss/class/{tag}/val", err_t_label, epoch)
+        if not metrics is None:
+            metrics = update_metrics(metrics, pred, t_label)
+            writer.add_scalar(f"Loss/class/{tag}/val", err_t_label, epoch)
 
         f1_running += f1(pred.cpu(), t_label.data.view_as(pred).cpu())
 
         i += 1
-
-    metrics = log_tensorboard(
-        writer, f"class/{tag}/val", metrics, epoch, source, target
-    )
+        
+    if not metrics is None:
+        metrics = log_tensorboard(
+            writer, f"class/{tag}/val", metrics, epoch, source, target
+        )
 
     accu = n_correct.data.numpy() * 1.0 / n_total
     f1_running /= n_total

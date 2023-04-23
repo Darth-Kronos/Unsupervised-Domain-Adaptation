@@ -9,5 +9,5 @@ for j in ${targets[@]}; do
     CUDA_VISIBLE_DEVICES=8 python main.py \
         --source_dataset "dslr_source" \
         --target_dataset $j \
-        --perturb false; \
+        --perturb true; \
 done

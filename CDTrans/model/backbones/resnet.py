@@ -6,8 +6,9 @@ from torch import nn
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
+    )
 
 
 class BasicBlock(nn.Module):
@@ -49,8 +50,9 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=False)
+        self.conv2 = nn.Conv2d(
+            planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+        )
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
@@ -82,11 +84,12 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, last_stride=2, block=Bottleneck,  frozen_stages=-1,layers=[3, 4, 6, 3]):
+    def __init__(
+        self, last_stride=2, block=Bottleneck, frozen_stages=-1, layers=[3, 4, 6, 3]
+    ):
         self.inplanes = 64
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                               bias=False)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         # self.relu = nn.ReLU(inplace=True)   # add missed relu
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=None, padding=0)
@@ -100,8 +103,13 @@ class ResNet(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
@@ -121,14 +129,14 @@ class ResNet(nn.Module):
                     param.requires_grad = False
 
         for i in range(1, self.frozen_stages + 1):
-            m = getattr(self, 'layer{}'.format(i))
-            print('layer{}'.format(i))
+            m = getattr(self, "layer{}".format(i))
+            print("layer{}".format(i))
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False
 
     def forward(self, x, cam_label=None):
-        x = self.conv1(x) # [64, 64, 128, 64]
+        x = self.conv1(x)  # [64, 64, 128, 64]
 
         x = self.bn1(x)
         # x = self.relu(x)    # add missed relu
@@ -143,32 +151,33 @@ class ResNet(nn.Module):
     def load_param(self, model_path):
         param_dict = torch.load(model_path)
         for i in param_dict:
-            if 'fc' in i:
+            if "fc" in i:
                 continue
             self.state_dict()[i].copy_(param_dict[i])
 
     def load_un_param(self, trained_path):
         param_dict = torch.load(trained_path)
-        if 'state_dict' in param_dict:
-            param_dict = param_dict['state_dict']
+        if "state_dict" in param_dict:
+            param_dict = param_dict["state_dict"]
         for k in list(param_dict.keys()):
             # retain only encoder_q up to before the embedding layer
-            if k.startswith('module.encoder_q') and not k.startswith('module.encoder_q.fc'):
+            if k.startswith("module.encoder_q") and not k.startswith(
+                "module.encoder_q.fc"
+            ):
                 # remove prefix
-                param_dict[k[len("module.encoder_q."):]] = param_dict[k]
+                param_dict[k[len("module.encoder_q.") :]] = param_dict[k]
             # delete renamed or unused k
             del param_dict[k]
         for i in param_dict:
-            if 'fc' in i:
+            if "fc" in i:
                 continue
             self.state_dict()[i].copy_(param_dict[i])
-
 
     def random_init(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
+                m.weight.data.normal_(0, math.sqrt(2.0 / n))
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()

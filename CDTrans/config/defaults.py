@@ -20,24 +20,24 @@ _C.MODEL = CN()
 # Using cuda or cpu for training
 _C.MODEL.DEVICE = "cuda"
 # ID number of GPU
-_C.MODEL.DEVICE_ID = '0'
+_C.MODEL.DEVICE_ID = "0"
 # Name of backbone
-_C.MODEL.NAME = 'resnet50'
+_C.MODEL.NAME = "resnet50"
 # Last stride of backbone
 _C.MODEL.LAST_STRIDE = 1
 # Path to pretrained model of backbone
-_C.MODEL.PRETRAIN_PATH = ''
+_C.MODEL.PRETRAIN_PATH = ""
 _C.MODEL.DIST_TRAIN = False
 # Use ImageNet pretrained model to initialize backbone or use self trained model to initialize the whole model
 # Options: 'imagenet' , 'self' , 'finetune'
-_C.MODEL.PRETRAIN_CHOICE = 'imagenet'
+_C.MODEL.PRETRAIN_CHOICE = "imagenet"
 _C.MODEL.DROP_PATH = 0.1
 _C.MODEL.DROP_OUT = 0.0
 # If train with BNNeck, options: 'bnneck' or 'no'
-_C.MODEL.NECK = 'bnneck'
+_C.MODEL.NECK = "bnneck"
 # If train loss include center loss, options: 'yes' or 'no'. Loss with center loss has different optimizer configuration
-_C.MODEL.IF_WITH_CENTER = 'no'
-_C.MODEL.ID_LOSS_TYPE = 'softmax'
+_C.MODEL.IF_WITH_CENTER = "no"
+_C.MODEL.ID_LOSS_TYPE = "softmax"
 _C.MODEL.ID_LOSS_WEIGHT = 1.0
 _C.MODEL.TRIPLET_LOSS_WEIGHT = 1.0
 _C.MODEL.THRESH = 0.0
@@ -45,15 +45,15 @@ _C.MODEL.PROB = 0.0
 _C.MODEL.YIWEI_NUM = 5
 # The loss type of metric loss
 # options:['triplet'](without center loss) or ['center','triplet_center'](with center loss)
-_C.MODEL.METRIC_LOSS_TYPE = 'triplet'
-_C.MODEL.Transformer_TYPE = 'None'
+_C.MODEL.METRIC_LOSS_TYPE = "triplet"
+_C.MODEL.Transformer_TYPE = "None"
 _C.MODEL.STRIDE_SIZE = [16, 16]
 # For example, if loss type is cross entropy loss + triplet loss + center loss
 # the setting should be: _C.MODEL.METRIC_LOSS_TYPE = 'triplet_center' and _C.MODEL.IF_WITH_CENTER = 'yes'
 # If train with soft triplet loss, options: 'True', 'False'
 _C.MODEL.NO_MARGIN = False
 # If train with label smooth, options: 'on', 'off'
-_C.MODEL.IF_LABELSMOOTH = 'on'
+_C.MODEL.IF_LABELSMOOTH = "on"
 # If train with arcface loss, options: 'True', 'False'
 _C.MODEL.COS_LAYER = False
 _C.MODEL.LOCAL_F = False
@@ -69,15 +69,15 @@ _C.MODEL.VIEWPOINT_EMBEDDING = False
 _C.MODEL.NO_SHUFFLE = False
 _C.MODEL.DEVIDE_LENGTH = 4
 
-_C.MODEL.RECIP_LOSS = ''
+_C.MODEL.RECIP_LOSS = ""
 # Setting for classcifier domain adaption (UDA) or reid
-_C.MODEL.TASK_TYPE = 'reid'
+_C.MODEL.TASK_TYPE = "reid"
 # Setting for domain adaption (UDA) stage, pretrain or uda
-_C.MODEL.UDA_STAGE = 'pretrain'
+_C.MODEL.UDA_STAGE = "pretrain"
 # define the bottleneck and classifer setting, 'TransReID' and 'SHOT'
-_C.MODEL.FC_SETTING = 'TransReID'
+_C.MODEL.FC_SETTING = "TransReID"
 # one branch or three branch for BLOCK Pattern
-_C.MODEL.BLOCK_PATTERN = 'normal'
+_C.MODEL.BLOCK_PATTERN = "normal"
 # -----------------------------------------------------------------------------
 # INPUT
 # -----------------------------------------------------------------------------
@@ -106,12 +106,12 @@ _C.INPUT.PADDING = 10
 # -----------------------------------------------------------------------------
 _C.DATASETS = CN()
 # List of the dataset names for training, as present in paths_catalog.py
-_C.DATASETS.NAMES = ('market1501')
-_C.DATASETS.NAMES2 = ('market1501')
+_C.DATASETS.NAMES = "market1501"
+_C.DATASETS.NAMES2 = "market1501"
 # Root directory where datasets should be used (and downloaded if not found)
-_C.DATASETS.ROOT_TRAIN_DIR = ('../data')
-_C.DATASETS.ROOT_TRAIN_DIR2 = ('../data')
-_C.DATASETS.ROOT_TEST_DIR = ('../data')
+_C.DATASETS.ROOT_TRAIN_DIR = "../data"
+_C.DATASETS.ROOT_TRAIN_DIR2 = "../data"
+_C.DATASETS.ROOT_TEST_DIR = "../data"
 _C.DATASETS.PLUS_NUM_ID = 100
 _C.DATASETS.QUERY_MINING = False
 # -----------------------------------------------------------------------------
@@ -121,7 +121,7 @@ _C.DATALOADER = CN()
 # Number of data loading threads
 _C.DATALOADER.NUM_WORKERS = 8
 # Sampler for data loading
-_C.DATALOADER.SAMPLER = 'softmax'
+_C.DATALOADER.SAMPLER = "softmax"
 # Number of instance for one batch
 _C.DATALOADER.NUM_INSTANCE = 16
 
@@ -204,13 +204,13 @@ _C.TEST.RE_RANKING_TRACK = False
 # Path to trained model
 _C.TEST.WEIGHT = ""
 # Which feature of BNNeck to be used for test, before or after BNNneck, options: 'before' or 'after'
-_C.TEST.NECK_FEAT = 'after'
+_C.TEST.NECK_FEAT = "after"
 # Whether feature is nomalized before test, if yes, it is equivalent to cosine distance
-_C.TEST.FEAT_NORM = 'yes'
+_C.TEST.FEAT_NORM = "yes"
 # Name for saving the distmat after testing.
 _C.TEST.DIST_MAT = "dist_mat.npy"
 # Whether using fliped feature for testing, option: 'on', 'off'
-_C.TEST.FLIP_FEATS = 'off'
+_C.TEST.FLIP_FEATS = "off"
 # Whether calculate the eval score option: 'True', 'False'
 _C.TEST.EVAL = False
 # ---------------------------------------------------------------------------- #

@@ -6,10 +6,10 @@ class SELayer(nn.Module):
         super(SELayer, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Sequential(
-                nn.Linear(channel, int(channel/reduction), bias=False),
-                nn.ReLU(inplace=True),
-                nn.Linear(int(channel/reduction), channel, bias=False),
-                nn.Sigmoid()
+            nn.Linear(channel, int(channel / reduction), bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(int(channel / reduction), channel, bias=False),
+            nn.Sigmoid(),
         )
 
     def forward(self, x):

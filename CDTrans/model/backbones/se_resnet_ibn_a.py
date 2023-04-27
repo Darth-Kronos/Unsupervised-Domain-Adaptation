@@ -4,21 +4,25 @@ import torch
 import math
 from collections import OrderedDict
 import torch.utils.checkpoint as cp
-__all__ = ['se_resnet50_ibn_a', 'se_resnet101_ibn_a', 'se_resnet152_ibn_a']
+
+__all__ = ["se_resnet50_ibn_a", "se_resnet101_ibn_a", "se_resnet152_ibn_a"]
+
 
 def conv3x3(in_planes, out_planes, stride=1):
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
+    )
 
 
 class IBN(nn.Module):
     def __init__(self, planes):
         super(IBN, self).__init__()
-        half1 = int(planes/2)
+        half1 = int(planes / 2)
         self.half = half1
         half2 = planes - half1
         self.IN = nn.InstanceNorm2d(half1, affine=True)
         self.BN = nn.BatchNorm2d(half2)
-    
+
     def forward(self, x):
         split = torch.split(x, self.half, 1)
         out1 = self.IN(split[0].contiguous())
@@ -63,15 +67,18 @@ class SEBasicBlock(nn.Module):
 class SEBottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, ibn=False, reduction=16):
+    def __init__(
+        self, inplanes, planes, stride=1, downsample=None, ibn=False, reduction=16
+    ):
         super(SEBottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         if ibn:
             self.bn1 = IBN(planes)
         else:
             self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=False)
+        self.conv2 = nn.Conv2d(
+            planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+        )
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
@@ -103,29 +110,28 @@ class SEBottleneck(nn.Module):
 
         return out
 
-class ResNet(nn.Module):
 
-    def __init__(self, last_stride,block, layers, frozen_stages=-1, num_classes=1000):
+class ResNet(nn.Module):
+    def __init__(self, last_stride, block, layers, frozen_stages=-1, num_classes=1000):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                               bias=False)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.frozen_stages = frozen_stages
-        self.layer1 = self._make_layer(block, 64, layers[0]) 
+        self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=last_stride)
         self.avgpool = nn.AvgPool2d(7)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
-        
-        self.conv1.weight.data.normal_(0, math.sqrt(2. / (7 * 7 * 64)))
+
+        self.conv1.weight.data.normal_(0, math.sqrt(2.0 / (7 * 7 * 64)))
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
+                m.weight.data.normal_(0, math.sqrt(2.0 / n))
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
@@ -137,8 +143,13 @@ class ResNet(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
@@ -161,8 +172,8 @@ class ResNet(nn.Module):
                     param.requires_grad = False
 
         for i in range(1, self.frozen_stages + 1):
-            m = getattr(self, 'layer{}'.format(i))
-            print('layer{}'.format(i))
+            m = getattr(self, "layer{}".format(i))
+            print("layer{}".format(i))
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False
@@ -178,50 +189,54 @@ class ResNet(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        #x = self.avgpool(x)
-        #x = x.view(x.size(0), -1)
-        #x = self.fc(x)
+        # x = self.avgpool(x)
+        # x = x.view(x.size(0), -1)
+        # x = self.fc(x)
 
         return x
 
-
     def load_param(self, model_path):
         param_dict = torch.load(model_path)
-        if 'state_dict' in param_dict:
-            param_dict = param_dict['state_dict']
+        if "state_dict" in param_dict:
+            param_dict = param_dict["state_dict"]
         for i in param_dict:
-            if 'fc' in i:
+            if "fc" in i:
                 continue
-            self.state_dict()[i.replace('module.','')].copy_(param_dict[i])
+            self.state_dict()[i.replace("module.", "")].copy_(param_dict[i])
 
-def se_resnet50_ibn_a(last_stride,num_classes=1000,**kwargs):
+
+def se_resnet50_ibn_a(last_stride, num_classes=1000, **kwargs):
     """Constructs a ResNet-50 model.
 
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = ResNet(last_stride,SEBottleneck, [3, 4, 6, 3], num_classes=num_classes,**kwargs)
+    model = ResNet(
+        last_stride, SEBottleneck, [3, 4, 6, 3], num_classes=num_classes, **kwargs
+    )
     model.avgpool = nn.AdaptiveAvgPool2d(1)
     return model
 
 
-def se_resnet101_ibn_a(last_stride,num_classes=1000,**kwargs):
+def se_resnet101_ibn_a(last_stride, num_classes=1000, **kwargs):
     """Constructs a ResNet-101 model.
 
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = ResNet(last_stride,SEBottleneck, [3, 4, 23, 3], num_classes=num_classes,**kwargs)
+    model = ResNet(
+        last_stride, SEBottleneck, [3, 4, 23, 3], num_classes=num_classes, **kwargs
+    )
     model.avgpool = nn.AdaptiveAvgPool2d(1)
     return model
 
 
-def se_resnet152_ibn_a(last_stride,num_classes):
+def se_resnet152_ibn_a(last_stride, num_classes):
     """Constructs a ResNet-152 model.
 
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = ResNet(last_stride,SEBottleneck, [3, 8, 36, 3], num_classes=num_classes)
+    model = ResNet(last_stride, SEBottleneck, [3, 8, 36, 3], num_classes=num_classes)
     model.avgpool = nn.AdaptiveAvgPool2d(1)
     return model

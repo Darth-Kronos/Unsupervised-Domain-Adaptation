@@ -6,12 +6,26 @@ Machine learning algorithms and techniques often assume that the training and te
 
 UDA has been studied extensively in recent years, with a variety of methods proposed for computer vision, robotics, natural language processing, and speech recognition. Some popular methods include adversarial training, feature alignment, and self-training. Adversarial training involves training a model to minimize the discrepancy between the source and target domains using a domain classifier. Feature alignment methods aim to align the feature distributions between the source and target domains. 
 
-### Domain Adaptation Neural Network
+## Domain-Adversarial Training Neural Network
+Adapted from [DANN-github](https://github.com/fungtion/DANN) as an implemetnatation of [Domain-Adversarial Training Neural Network](https://arxiv.org/abs/1505.07818)
+
 To train DANN with a source of Amazon for target Webcam a sample command line call is provided
 
 ```python main.py --source_dataset "amazon_source" --target_dataset "webcam_target" --model_path "models" --data_dir "data"```
 
-### Multi-Adversarial Domain Adaptation 
-To train MADA, change the source and target varables in MADA/main.py and run:
+* must call from within the DANN directory
+* last epoch model will save in ```args.model_path```
+* TensorBoard outputs will save in ```args.tensorboard_log_dir```
+* setting ```args.perturb = True``` will run a perturbed inference after training
 
-```python main.py ```
+## Multi-Adversarial Domain Adaptation 
+Implementation of [Multi-Adversarial Domain Adaptation](https://arxiv.org/abs/1809.02176)
+
+To train MADA with a source of Amazon for target Webcam a sample command line call is provided
+
+```python main.py --source_dataset "amazon_source" --target_dataset "webcam_target" --model_path "models" --data_dir "data"```
+
+* must call from within the MADA directory
+* last epoch model will save in ```args.model_path```
+* TensorBoard outputs will save in ```args.tensorboard_log_dir```
+* setting ```args.perturb = True``` will run a perturbed inference after training

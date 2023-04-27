@@ -1,4 +1,5 @@
 model=$1
+perturb=$2
 if [ ! -n "$1" ]
 then 
     echo 'pelease input the model para: {deit_base, deit_small}'
@@ -24,6 +25,6 @@ do
     DATASETS.NAMES "Office" DATASETS.NAMES2 "Office" \
     MODEL.Transformer_TYPE $model_type \
     SOLVER.LOG_PERIOD 10 \
-    
+    PERTURB $perturb   
  
 done

@@ -791,7 +791,8 @@ def do_inference_uda(cfg, model, val_loader, num_query):
     img_path_list = []
     for n_iter, (img, vid, camid, camids, target_view, _) in enumerate(val_loader):
         with torch.no_grad():
-            img = perturb_loader(img)
+            if cfg.PERTURB:
+                img = perturb_loader(img)
             img = img.to(device)
             camids = camids.to(device)
             target_view = target_view.to(device)

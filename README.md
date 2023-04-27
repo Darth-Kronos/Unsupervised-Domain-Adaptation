@@ -42,7 +42,7 @@ Implementation of [Contrastive Adaptation Network](https://arxiv.org/pdf/1901.00
 ```
 ./experiments/scripts/train.sh ${config_yaml} ${gpu_ids} ${adaptation_method} ${experiment_name}
 ```
-
+* To run without the model without perturbation, comment line 137 in Contrastive-Adaptation-Network/tools/test.py
 
 * The experiment log file and the saved checkpoints will be stored at ./experiments/ckpt/${experiment_name}
 

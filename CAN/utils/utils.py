@@ -37,4 +37,21 @@ def accuracy(preds, target):
     preds = torch.max(preds, dim=1).indices
     return 100.0 * torch.sum(preds == target).item() / preds.size(0)
 
+def mean_f1_score(preds, target):
+    num_classes = preds.size(1)
+    preds = torch.max(preds, dim=1).indices
+    f1_scores = []
+    for c in range(num_classes):
+        mask_c = (target == c)
+        target_c = torch.masked_select(target, mask_c)
+        preds_c = torch.masked_select(preds, mask_c)
+        
+        tp = torch.sum(preds_c == c).item()  
+        fn = torch.sum(preds_c != c).item()  
+        fp = torch.sum(target_c != c).item() 
+        precision = tp / (tp + fp + 1e-10)
+        recall = tp / (tp + fn + 1e-10)
+        f1 = 2 * (precision * recall) / (precision + recall + 1e-10)
+        f1_scores.append(f1)
+    return np.mean(f1_scores) * 100.0  
 

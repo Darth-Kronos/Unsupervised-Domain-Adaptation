@@ -59,8 +59,8 @@ def main(args):
     n_epoch = 20
     n_classes = 31
     # load model
-    net = MADA(n_classes)
-
+    net = MADA(n_classes)   
+    
     # setup optimizer
     # optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     optimizer = torch.optim.SGD(
@@ -81,6 +81,10 @@ def main(args):
     for p in net.parameters():
         p.requires_grad = True
 
+    trainable_params = sum(p.numel() for p in net.parameters() if p.requires_grad)
+    total_params = sum(p.numel() for p in net.parameters())
+    print(f"Trainable Parameters: {trainable_params} \n Total Parameters: {total_params}")
+
     log_dir = f"{args.tensorboard_log_dir}/{source}_{target}_{args.encoder}"
     writer = SummaryWriter(log_dir=log_dir)  # create a TensorBoard writer
     c_s_train_metrics, c_s_val_metrics = set_metrics(device, num_classes=31)
@@ -88,7 +92,7 @@ def main(args):
 
     # training
     best_accu_t = 0.0
-    for epoch in range(args.epoch):
+    for epoch in range(args.epochs):
 
         len_dataloader = min(len(dataloader_source), len(dataloader_target))
         data_source_iter = iter(dataloader_source)

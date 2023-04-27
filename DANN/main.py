@@ -71,6 +71,9 @@ def main(args):
 
     for p in net.parameters():
         p.requires_grad = True
+    trainable_params = sum(p.numel() for p in net.parameters() if p.requires_grad)
+    total_params = sum(p.numel() for p in net.parameters())
+    print(f"Trainable Parameters: {trainable_params} \n Total Parameters: {total_params}")
 
     if args.perturb:
         log_dir = f"{args.tensorboard_log_dir}/{source}_{target}_{args.encoder}_perturbed"

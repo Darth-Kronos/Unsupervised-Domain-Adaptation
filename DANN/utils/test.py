@@ -1,4 +1,5 @@
 import os
+import time
 import random
 
 import torch.backends.cudnn as cudnn
@@ -63,9 +64,10 @@ def test(args, dataset_name, metrics, writer, tag, epoch):
     n_total = 0
     n_correct = 0
     f1_running = 0
+    times = []
     while i < len_dataloader:
-
         # test model using target data
+        start = time.time()
         data_target = next(data_target_iter)
         t_img, t_label = data_target
 
@@ -76,6 +78,8 @@ def test(args, dataset_name, metrics, writer, tag, epoch):
             t_label = t_label.to(device)
 
         class_output, _ = net(input=t_img, alpha=alpha)
+        end = time.time()
+        times.append((end-start)/batch_size)
         err_t_label = loss_class(class_output, t_label)
 
         pred = torch.argmax(class_output, dim=1)
@@ -98,5 +102,5 @@ def test(args, dataset_name, metrics, writer, tag, epoch):
 
     accu = n_correct.data.numpy() * 1.0 / n_total
     f1_running /= n_total
-
+    print(f"Inference time: {sum(times) / len(times)}")
     return accu, f1_running, metrics

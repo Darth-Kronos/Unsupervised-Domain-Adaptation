@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch.autograd import Function
 import torch
 
-from torchvision.models import resnet50, alexnet
+from torchvision.models import resnet50, ResNet50_Weights
 
 
 class ReverseLayerF(torch.autograd.Function):
@@ -51,7 +51,7 @@ class MADA(torch.nn.Module):
             torch.nn.ReLU(True),
         )"""
         
-        self.feature = resnet50(pretrained=True)
+        self.feature = resnet50(weights=ResNet50_Weights.DEFAULT)
         self.feature = torch.nn.Sequential(*(list(self.feature.children())[:-1]))
         
 

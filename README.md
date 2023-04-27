@@ -11,7 +11,7 @@ Adapted from [DANN-github](https://github.com/fungtion/DANN) as an implemetnatat
 
 To train DANN with a source of Amazon for target Webcam a sample command line call is provided
 
-```
+```bash
 python main.py --source_dataset "amazon_source" --target_dataset "webcam_target" --model_path "models" --data_dir "data"
 ```
 
@@ -25,7 +25,7 @@ Implementation of [Multi-Adversarial Domain Adaptation](https://arxiv.org/abs/18
 
 To train MADA with a source of Amazon for target Webcam a sample command line call is provided
 
-```
+```bash
 python main.py --source_dataset "amazon_source" --target_dataset "webcam_target" --model_path "models" --data_dir "data"
 ```
 
@@ -39,7 +39,7 @@ Implementation of [Contrastive Adaptation Network](https://arxiv.org/pdf/1901.00
 
 
 * Training command
-```
+```bash
 ./experiments/scripts/train.sh ${config_yaml} ${gpu_ids} ${adaptation_method} ${experiment_name}
 ```
 * To run without the model without perturbation, comment line 137 in CAN/tools/test.py
@@ -48,6 +48,34 @@ Implementation of [Contrastive Adaptation Network](https://arxiv.org/pdf/1901.00
 
 
 * Testing command
-```
+```bash
 ./experiments/scripts/train.sh ${config_yaml} ${gpu_ids} ${adaptation_method} ${experiment_name}
+```
+
+## CDTrans: Cross-Domain Transformer for Unsupervised Domain Adaptation
+Adopted from [CDTrans](https://github.com/CDTrans/CDTrans) as an implementation of [CDTrans paper](https://arxiv.org/abs/2109.06165).
+
+
+* Training: We utilize 1 GPU for pre-training and 2 GPUs for UDA, each with 16G of memory.
+
+* Scripts: Command input paradigm
+
+`bash scripts/[pretrain/uda]/office31/run_*.sh [deit_base/deit_small]`
+
+* For example: DeiT-Base scripts
+```bash
+
+# Office-31     Source: Amazon   ->  Target: Dslr, Webcam
+bash scripts/pretrain/office31/run_office_amazon.sh deit_base
+bash scripts/uda/office31/run_office_amazon.sh deit_base
+
+```
+* Evaluation
+
+```bash
+
+# Office-31     Source: DSLR   ->  Target: Amazon
+python test.py --config_file 'configs/uda.yml' MODEL.DEVICE_ID "('0')" TEST.WEIGHT "('../logs/uda/deit_base/office/dslr2amazon/t
+ransformer_best_model.pth')" DATASETS.NAMES 'Office' DATASETS.NAMES2 'Office' OUTPUT_DIR '../logs/uda/deit_base/office/' DATASETS.ROOT_TRAIN_DIR './data/office31/dslr_list.txt' DATASETS.ROOT_TRAIN_DIR2 './data/office31/dslr_list.txt' DATASETS.ROOT_TEST_DIR './data/office31/amazon_list.txt' PERTURB 'False'
+
 ```

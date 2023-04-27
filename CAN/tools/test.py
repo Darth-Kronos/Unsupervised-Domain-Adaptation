@@ -5,12 +5,13 @@ import numpy as np
 from torch.backends import cudnn
 from model import model
 import data.utils as data_utils
-from utils.utils import to_cuda, mean_accuracy, accuracy
+from utils.utils import to_cuda, mean_accuracy, accuracy, mean_f1_score
 from data.custom_dataset_dataloader import CustomDatasetDataLoader
 import sys
 import pprint
 from config.config import cfg, cfg_from_file, cfg_from_list
 from math import ceil as ceil
+import torchvision.transforms as transforms
 
 def parse_args():
     """
@@ -69,6 +70,22 @@ def prepare_data():
 
     return dataloader
 
+def add_perturbations(data):
+    transform = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.RandomApply([
+            transforms.GaussianBlur(kernel_size=55, sigma=(0.1, 5.0)),
+        ], p=0.75),
+        transforms.ToTensor(),
+    ])
+    return transform(data)
+
+
+def perturb_loader(loader):
+    data = loader
+    data_perturbed = torch.stack([add_perturbations(d) for d in data])
+    return data_perturbed
+
 def test(args):
     # prepare data
     dataloader = prepare_data()
@@ -116,7 +133,8 @@ def test(args):
         net.module.set_bn_domain(domain_id)
         for sample in iter(dataloader): 
             res['path'] += sample['Path']
-
+            #To run without perturbation, comment line 137
+            sample['Img'] = perturb_loader(sample['Img'])
             if cfg.DATA_TRANSFORM.WITH_FIVE_CROP:
                 n, ncrop, c, h, w = sample['Img'].size()
                 sample['Img'] = sample['Img'].view(-1, c, h, w)
@@ -143,7 +161,7 @@ def test(args):
             gts = torch.cat(res['gt'], dim=0)
             probs = torch.cat(res['probs'], dim=0)
         
-            assert(cfg.EVAL_METRIC == 'mean_accu' or cfg.EVAL_METRIC == 'accuracy')
+            assert(cfg.EVAL_METRIC == 'mean_accu' or cfg.EVAL_METRIC == 'accuracy' or cfg.EVAL_METRIC == 'f1_score' or cfg.EVAL_METRIC == 'mean_f1_score')
             if cfg.EVAL_METRIC == "mean_accu": 
                 eval_res = mean_accuracy(probs, gts)
                 print('Test mean_accu: %.4f' % (eval_res))
@@ -151,6 +169,14 @@ def test(args):
             elif cfg.EVAL_METRIC == "accuracy":
                 eval_res = accuracy(probs, gts)
                 print('Test accuracy: %.4f' % (eval_res))
+            
+            elif cfg.EVAL_METRIC == "f1_score":
+                eval_res = f1_score(probs, gts)
+                print('Test f1_score: %.4f' % (eval_res))
+            
+            elif cfg.EVAL_METRIC == "mean_f1_score":
+                eval_res = mean_f1_score(probs, gts)
+                print('Test mean_f1_score: %.4f' % (eval_res))
 
     print('Finished!')
 

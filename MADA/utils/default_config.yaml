@@ -6,8 +6,8 @@ source_dataset: "amazon_source"
 target_dataset: "webcam_target"
 
 # output arguments
-tensorboard_log_dir: "runs/perturbed/"
-model_path: "models/perturbed/"
+tensorboard_log_dir: "runs/"
+model_path: "models/"
 
 # training arguments
 model: "MADA"

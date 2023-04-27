@@ -11,7 +11,7 @@ Adapted from [DANN-github](https://github.com/fungtion/DANN) as an implemetnatat
 
 To train DANN with a source of Amazon for target Webcam a sample command line call is provided
 
-```python main.py --source_dataset "amazon_source" --target_dataset "webcam_target" --model_path "models" --data_dir "data"```
+`python main.py --source_dataset "amazon_source" --target_dataset "webcam_target" --model_path "models" --data_dir "data"`
 
 * must call from within the DANN directory
 * last epoch model will save in ```args.model_path```
@@ -23,7 +23,7 @@ Implementation of [Multi-Adversarial Domain Adaptation](https://arxiv.org/abs/18
 
 To train MADA with a source of Amazon for target Webcam a sample command line call is provided
 
-```python main.py --source_dataset "amazon_source" --target_dataset "webcam_target" --model_path "models" --data_dir "data"```
+`python main.py --source_dataset "amazon_source" --target_dataset "webcam_target" --model_path "models" --data_dir "data"`
 
 * must call from within the MADA directory
 * last epoch model will save in ```args.model_path```

@@ -36,7 +36,7 @@ python main.py --source_dataset "amazon_source" --target_dataset "webcam_target"
 
 ## Contrastive Adaptation Network
 Implementation of [Contrastive Adaptation Network](https://arxiv.org/pdf/1901.00976.pdf)
-
+Adopted from [CAN](https://github.com/kgl-prml/Contrastive-Adaptation-Network-for-Unsupervised-Domain-Adaptation)
 
 * Training command
 ```bash
